@@ -31,7 +31,7 @@
             {% for item in items %}
             <tr>
                 <td>
-                    <div class="text_bilet">
+                    <div class="booking-card">
                         <div class="td_date">{{ item.timeslot_id.date }}, {{ item.timeslot_id.time }}</div>
                         <a href="/room_review/{{ item.timeslot_id.room.url_name }}/">{{ item.timeslot_id.room.name }}</a>
                         , гостей: {{ item.persons_count }}, цена: {{ item.price }} руб.
@@ -61,7 +61,7 @@
                     <a href="/booking/{{ item.id }}/cancel/">Отменить</a>
                     {% endif %}
                     {% else %}
-                    <div class="bron">РЕЗЕРВ</div>
+                    <div class="reserve-label">РЕЗЕРВ</div>
                     {% endif %}
                 </td>
             </tr>

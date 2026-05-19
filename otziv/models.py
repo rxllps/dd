@@ -1,6 +1,6 @@
 from django.db import models
 
-from films.models import Room
+from rooms.models import Room
 
 
 class Otziv(models.Model):

@@ -37,8 +37,8 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'films',
-    'kinouser',
+    'rooms.apps.RoomsConfig',
+    'clubuser.apps.ClubuserConfig',
     'otziv',
     'guest_otziv'
 ]
@@ -131,7 +131,7 @@ PAYMENT_PROVIDER = 'mock'
 YOOKASSA_SHOP_ID = ''
 YOOKASSA_SECRET_KEY = ''
 
-# Правила отмены (см. films/pricing.py)
+# Правила отмены (см. rooms/pricing.py)
 BOOKING_CANCEL_FREE_HOURS = 2
 BOOKING_CANCEL_FEE_RATE = 0.50
 
@@ -141,4 +141,4 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, "static"),
 ]
 
-AUTH_USER_MODEL = 'kinouser.Kinouser'
+AUTH_USER_MODEL = 'kinouser.ClubUser'

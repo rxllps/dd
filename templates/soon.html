@@ -52,7 +52,7 @@
 
 			<div class="three">
 				<ul class="three_ul">
-					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/treler/{{ film.url_name }}/"> Смотреть трейлер</a></li>
+					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/room_video/{{ room.url_name }}/"> Смотреть видео комнаты</a></li>
 				</ul>
             </div>
 
@@ -61,8 +61,8 @@
         <div class="pagination">
                     <div class="pagination pagination-centered">
                 <ul>
-                    {% for page in films.paginator.page_range %}
-                        {% if page == films.number %}
+                    {% for page in rooms.paginator.page_range %}
+                        {% if page == rooms.number %}
                             <li class="current"><a href="/soon/page/{{ page }}/">{{ page }}</a></li>
                         {% else %}
                             <li><a href="/soon/page/{{ page }}/">{{ page }}</a></li>

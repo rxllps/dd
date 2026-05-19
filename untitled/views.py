@@ -8,17 +8,18 @@ from reportlab.pdfgen import canvas
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
+import os
 from datetime import datetime, timedelta
 
 from django.db import transaction
 
-from films.models import (
+from rooms.models import (
     Room, TimeSlot, Booking, Reservation, BookingStat,
     ServicePackage, Payment,
 )
-from films import pricing
-from films.payments import get_payment_provider
-from kinouser.models import Kinouser
+from rooms import pricing
+from rooms.payments import get_payment_provider
+from clubuser.models import ClubUser
 from guest_otziv.models import GuestOtziv, AdminOtziv
 from otziv.models import Otziv
 from .forms import UserCreateForm
@@ -168,13 +169,13 @@ def main(request, url_date=datetime.today().date(), page_number=1):
     args['timeslots'] = current_page.page(page_number)
     if len(b) == 0:
         args['no_timeslots'] = True
-    return render_to_response('test_film.html', args)
+    return render_to_response('rooms_home.html', args)
 
 
 def mykaraoke(request):
     args = dict()
     args['user'] = request.user
-    return render_to_response('mykino.html', args)
+    return render_to_response('about_karaoke.html', args)
 
 
 def price(request):
@@ -220,7 +221,7 @@ def room_detail(request, name=''):
         args['room'] = Room.objects.filter(url_name=name)[0]
         args['timeslots_data'] = timeslots_data
 
-        return render_to_response('seans.html', args)
+        return render_to_response('room_schedule.html', args)
 
     return redirect('/')
 
@@ -488,7 +489,7 @@ def room_video(request, name=''):
     if room:
         args['rooms'] = room
         args['room'] = room[0]
-        return render_to_response('treler.html', args)
+        return render_to_response('room_video_page.html', args)
 
     return redirect('/')
 
@@ -517,7 +518,10 @@ def room_review(request, name=''):
 def create_booking_receipt(booking):
     c = canvas.Canvas(settings.MEDIA_ROOT + "booking_receipt.pdf", pagesize=(607, 265))
 
-    c.drawImage(image="static/img/bilet.png", x=0, y=0)
+    receipt_bg = "static/img/booking_receipt.png"
+    if not os.path.isfile(receipt_bg):
+        receipt_bg = "static/img/bilet.png"
+    c.drawImage(image=receipt_bg, x=0, y=0)
     pdfmetrics.registerFont(TTFont('font', 'Arial.TTF'))
     pdfmetrics.registerFont(TTFont('test', 'static/fonts/BuxtonSketch.ttf'))
     c.setFont("font", 20)
@@ -592,7 +596,7 @@ def karaoke_cabinet(request, page_number=1, admin='0'):
 
         else:
             if admin == 'booking_true':
-                args['user_name'] = Kinouser.objects.get(
+                args['user_name'] = ClubUser.objects.get(
                     bookings=Booking.objects.get(id=request.POST.get('id_booking', ''))).lastname
                 args['room_name'] = Booking.objects.get(id=request.POST.get('id_booking', '')).timeslot_id.room.name
 

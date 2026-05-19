@@ -6,7 +6,7 @@ import uuid
 from django.conf import settings
 from django.utils import timezone
 
-from films.models import Payment
+from rooms.models import Payment
 
 
 class BasePaymentProvider(object):

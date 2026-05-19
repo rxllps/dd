@@ -3,7 +3,7 @@
 from __future__ import unicode_literals
 
 from django.db import migrations, models
-import films.models
+import django.db.models.deletion
 
 
 class Migration(migrations.Migration):
@@ -17,6 +17,6 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='kinouser',
             name='bilets',
-            field=models.ForeignKey(default=0, on_delete=films.models.Bron, to='films.Bilet'),
+            field=models.ForeignKey(default=0, on_delete=django.db.models.deletion.CASCADE, to='films.Bilet'),
         ),
     ]

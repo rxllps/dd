@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.contrib.admin import DateFieldListFilter
 
-from films.models import (
+from rooms.models import (
     RoomType, Room, TimeSlot, Booking, Reservation,
     BookingStat, ServicePackage, Payment,
 )

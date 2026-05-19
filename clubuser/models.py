@@ -3,10 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 
-from films.models import Booking, Reservation
-
-
-# Create your models here.
+from rooms.models import Booking, Reservation
 
 
 class UserManager(BaseUserManager):
@@ -31,7 +28,7 @@ class UserManager(BaseUserManager):
         return self.create_user(email=email, password=password, **fields)
 
 
-class Kinouser(AbstractBaseUser, PermissionsMixin):
+class ClubUser(AbstractBaseUser, PermissionsMixin):
     email = models.EmailField(
         'Email',
         max_length=255,
@@ -41,34 +38,34 @@ class Kinouser(AbstractBaseUser, PermissionsMixin):
     )
 
     firstname = models.CharField(
-        'First name',
+        'Имя',
         max_length=40,
         null=False,
         blank=False
     )
 
     lastname = models.CharField(
-        'Last name',
+        'Фамилия',
         max_length=40,
         null=False,
         blank=False
     )
 
-    bookings = models.ManyToManyField(Booking, default=0)
-    reservations = models.ManyToManyField(Reservation, default=0)
+    bookings = models.ManyToManyField(Booking, blank=True)
+    reservations = models.ManyToManyField(Reservation, blank=True)
 
     is_active = models.BooleanField(
-        'Active',
+        'Активен',
         default=True
     )
 
     is_admin = models.BooleanField(
-        'Is admin',
+        'Администратор',
         default=False
     )
 
     is_staff = models.BooleanField(
-        'Is staff user',
+        'Персонал',
         default=False
     )
 
@@ -86,6 +83,6 @@ class Kinouser(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     class Meta:
-        verbose_name = 'kinouser'
-        verbose_name_plural = 'kinousers'
+        verbose_name = 'пользователь клуба'
+        verbose_name_plural = 'пользователи клуба'
         db_table = 'kinouser'

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+
+{% block title %} {{ room.name }} | расписание бронирования {% endblock %}
+{% block template %}
+	<link rel="stylesheet" href="{% static 'room_schedule.css' %}">
+{% endblock %}
+{% block navbar %}
+	<div class="navbar">
+		<div class="navbar-inner">
+			<ul class="nav">
+				<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
+				<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
+				<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
+				{% if user.is_authenticated %}
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+				{% else %}
+				    <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
+				{% endif %}
+			</ul>
+		</div>
+	</div>
+{% endblock %}
+{% block content %}
+	<div class="body">
+		<div class="one">
+			<img src="{{ room.image.url }}" width="260" height="525">
+		</div>
+		<div class="two">
+			<p class="two_p_five">Расписание бронирования и цены</p>
+			<h3>{{ room.name }}</h3>
+			<p class="two_p_one">{{ room.description }}</p>
+		<div class="two_ul2">
+                {% for date,time in timeslots_data.items %}
+
+                    <p class="two_p2">{{ date }}</p>
+
+                    {% for tim in time %}
+                    <ul class="ul2">
+                    {% if tim|length == 20 %}
+                        <li> {{ tim }}</li>
+                    {% elif tim|length > 9 and tim|length < 20 %}
+                        <button class='zakaz_button' onclick="myfunk('{{ tim }}')">Забронировать</button>
+                        <br><br>
+                    {% elif tim|length < 9 %}
+                        Стоимость в час : {{ tim }} руб
+                    {% endif %}
+                    </ul>
+                        {% endfor %}
+
+            {% endfor %}
+</div>
+			<div class="three">
+				<ul class="three_ul">
+					<li class="three_li2"><img src="{% static 'img/ico1.png' %}">Расписание и цены</li>
+					<li class="three_li2"><img src="{% static 'img/ico2.png' %}"><a href="/room_video/{{ room.url_name }}/"> Смотреть видео</a></li>
+					<li class="three_li2"><img src="{% static 'img/ico3.png' %}"><a href="/room_review/{{ room.url_name }}/"> Напишите отзыв</a></li>
+				</ul>
+			</div>
+			<br>
+		</div>
+
+<script type="text/javascript">
+    function myfunk(slot_id){
+        my_url = '/booking/slot/'+slot_id;
+	    var booking_win = window.open(my_url,'booking_window','width=1040, height = 730, menubar="no", toolbar="no", location="no" ');
+	    booking_win.moveTo(screen.width/2-520,screen.height/2-350);
+}
+
+</script>
+	{% endblock %}

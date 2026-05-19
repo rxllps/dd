@@ -1,8 +1,7 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 
-
-{% block title %} Кинотеатр | гостевая книга {% endblock %}
+{% block title %} Караоке-Бар | гостевая книга {% endblock %}
 {% block template %}
     <link rel="stylesheet" href="{% static 'guest.css' %}">
     <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
@@ -12,14 +11,14 @@
 <div class="navbar">
 		<div class="navbar-inner">
 			<ul class="nav">
-				<li class="sp1"><a href="/">АФИША</a></li>
-				<li class="sp1"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+				<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 				<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 				<li class="sp1 link"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-				<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 				<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
 				{% if user.is_authenticated %}
-				    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
 				{% else %}
 				    <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
 				{% endif %}
@@ -30,23 +29,14 @@
 
 {% block content %}
 	<div class="body">
-		<p class="body_p">
-		</p>
-		<h4>
-		    Гостевая книга кинотеатра
-		</h4>
+		<h4>Гостевая книга караоке-бара</h4>
 		<p class="p_price">
-			Тут Вы можете оставить свои отзывы о работе кинотеатра или сайта, задать вопрос Администрации или просто похвалить нас..
+			Оставьте отзыв о клубе или сайте, задайте вопрос администрации.
 		</p>
-		<H4>
-			Внимание!
-		</H4>
 		<p class="p_price">
-			На странице <a href="soon.html">скоро в прокате</a> находится список фильмов, которые планируются к показу в кинотеатре.
+			Список всех комнат — на странице <a href="/upcoming/">новые комнаты</a>.
 		</p>
-		<p class="p1">
-		    Добавить новое сообщение
-		</p>
+		<p class="p1">Добавить новое сообщение</p>
     <form method="POST">
             {% csrf_token %}
 		<div class="wind">
@@ -65,13 +55,10 @@
 		</div>
     </form>
 		<div class="comment">
-			<H4>
-				Последние сообщения из гостевой книги:
-			</H4>
+			<h4>Последние сообщения:</h4>
 		</div>
 
         {% for otziv in otzivs %}
-
         <div class="guest_otziv">
             <h5>{{ otziv.0.name }}</h5>
             {{ otziv.0.date }}<br><br>
@@ -87,7 +74,6 @@
         </div>
         {% endif %}
         <br>
-
         {% endfor %}
 
         <div style="display: none;" id="hid_area">

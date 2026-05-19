@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 
 from django.core.management.base import BaseCommand
 
-from films.models import Room, TimeSlot
+from rooms.models import Room, TimeSlot
 
 
 class Command(BaseCommand):

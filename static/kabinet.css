@@ -215,7 +215,7 @@ h4 {
   color: #454545;
 }
 
-.text_bilet{
+.booking-card{
 	margin-left:50px;
 }
 .kupleno{
@@ -224,7 +224,7 @@ h4 {
 	font-size: 15px;
 }
 
-.bron{
+.reserve-label{
 	margin-left:180px;
 	color:red;
 	font-size: 15px;
@@ -253,7 +253,7 @@ h4 {
     font-size: 25px;
 }
 
-.text_bilet{
+.booking-card{
 
     font-size: 17px;
     font-family: Candara;
