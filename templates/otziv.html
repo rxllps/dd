@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 
-{% block title %} {{ film.name }} | отзыв {% endblock %}
+{% block title %} {{ room.name }} | отзыв {% endblock %}
 {% block template %}
 	<link rel="stylesheet" href="{% static 'otziv.css' %}">
     	<script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
@@ -11,14 +11,14 @@
 <div class="navbar">
 		<div class="navbar-inner">
 			<ul class="nav">
-				<li class="sp1"><a href="/">АФИША</a></li>
-				<li class="sp1"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+				<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 				<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 				<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-				<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 				<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
 				{% if user.is_authenticated %}
-				    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
                 {% else %}
                     <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
                 {% endif %}
@@ -33,39 +33,36 @@
 		    <br>
 		</p>
 		<h4>
-			Отзыв к фильму {{ film.name }} ({{ film.year }})
+			Отзыв о комнате {{ room.name }}
 		</h4>
 			<div class="one">
-				<img src="{{ film.image.url }}" width="260" height="525">
+				<img src="{{ room.image.url }}" width="260" height="525">
 			</div>
 			<div class="two">
-				<h3>{{ film.name }}</h3>
-				<p class="two_p_one">{{ film.secondname }}</p>
-				<p class="two_p_two">Cеансы:<span class="time"> <a href="/film/{{ film.url_name }}/">расписание</a></span></p>
+				<h3>{{ room.name }}</h3>
+				<p class="two_p_one">{{ room.description }}</p>
+				<p class="two_p_two">Бронирование:<span class="time"> <a href="/room/{{ room.url_name }}/">расписание</a></span></p>
 				<p class="two_p_three">
-					{{ film.opisanie }}
+					{{ room.full_description }}
 				</p>
 				<ul class="two_ul_two">
-					<li class="two_li"><b>В прокате:</b> {{ film.prokat }}</li>
-					<li class="two_li"><b>Формат:</b> {{ film.format }}</li>
-					<li class="two_li"><b>Длительность:</b> {{ film.dlitelnost }}</li>
-					<li class="two_li"><b>Жанр:</b> {% for zhanr in film.zhanr.all %} {{ zhanr }}, {% endfor %}</li>
-					<li class="two_li"><b>Производство:</b> {{ film.year }}, {{ film.proizvodstvo }}</li>
-					<li class="two_li"><b>Режисер:</b> {{ film.rezhiser }}</li>
-					<li class="two_li"><b>Актеры:</b> {{ film.actors }}</li>
+					<li class="two_li"><b>Вместимость:</b> до {{ room.max_persons }} человек</li>
+					<li class="two_li"><b>Тип:</b> {% for type in room.room_type.all %} {{ type }}, {% endfor %}</li>
+					<li class="two_li"><b>Оборудование:</b> {{ room.equipment }}</li>
+					<li class="two_li"><b>Цена в час:</b> {{ room.price_per_hour }} руб</li>
 				</ul>
 			</div>
 			<div class="three">
 				<ul class="three_ul">
-					<li class="three_li"><img src="{% static 'img/ico1.png' %}"><a href="/film/{{ film.url_name }}/"> Расписание сеансов и цены</a></li>
-					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/treler/{{ film.url_name }}/"> Смотреть трейлер</a></li>
-					<li class="three_li"><img src="{% static 'img/ico3.png' %}">Напишите отзыв о фильме</li>
+					<li class="three_li"><img src="{% static 'img/ico1.png' %}"><a href="/room/{{ room.url_name }}/"> Расписание и цены</a></li>
+					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/room_video/{{ room.url_name }}/"> Смотреть видео</a></li>
+					<li class="three_li"><img src="{% static 'img/ico3.png' %}">Напишите отзыв о комнате</li>
 				</ul>
 			</div>
 			<br>
 
             <br>
-    {% for otziv in comment %}
+    {% for otziv in comments %}
         <div class="otziv">
             <h5>{{ otziv.name }}</h5>
             {{ otziv.date }}<br><br>
@@ -73,7 +70,7 @@
         </div>
         <br>
     {% endfor %}
-        <hidden value="{{ seans.film.url_name }}" id="hid1">
+        <hidden value="{{ room.url_name }}" id="hid1">
         <form method="POST">
             {% csrf_token %}
             <div class="otziv_form">

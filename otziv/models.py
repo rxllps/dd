@@ -1,6 +1,6 @@
 from django.db import models
 
-from films.models import Film
+from films.models import Room
 
 
 class Otziv(models.Model):
@@ -8,10 +8,10 @@ class Otziv(models.Model):
     text = models.TextField(max_length=20000)
     email = models.EmailField()
     date = models.DateField()
-    film = models.ForeignKey(Film)
+    room = models.ForeignKey(Room)
 
     def __str__(self):
-        return self.film.name
+        return self.room.name
 
-    def get_film_name(self):
-        return self.film.name
+    def get_room_name(self):
+        return self.room.name

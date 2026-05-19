@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %} Кинотеатр | скоро в прокате {% endblock %}
+{% block title %} Караоке-Бар | новые комнаты {% endblock %}
 {% block template %}
 	<link rel="stylesheet" href="{% static 'soon.css' %}">
 {% endblock %}
@@ -8,14 +8,14 @@
 <div class="navbar">
 	<div class="navbar-inner">
 		<ul class="nav">
-			<li class="sp1"><a href="/">АФИША</a></li>
-			<li class="sp1 link"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+			<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+			<li class="sp1 link"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 			<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 			<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-			<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+			<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 			<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
 			{% if user.is_authenticated %}
-			    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+			    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
 			{% else %}
 			    <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
 			{% endif %}
@@ -28,26 +28,25 @@
 		<p class="body_p">
 		</p>
 		<h4>
-		Скоро лучшие новинки кино:
+		Все наши комнаты:
 		</h4>
-        {% for film in films %}
+        {% for room in rooms %}
 			<div class="one">
-				<img src="{{ film.image.url }}" width="260" height="525">
+				<img src="{{ room.image.url }}" width="260" height="525">
 			</div>
 			<div class="two">
-				<h3>{{ film.name }}</h3>
-				<p class="two_p_one">{{ film.secondname }}</p>
+				<h3>{{ room.name }}</h3>
+				<p class="two_p_one">{{ room.description }}</p>
 				
 				<p class="two_p_three">
-					{{ film.opisanie }}
+					{{ room.full_description }}
 				</p>
 				<ul class="two_ul_two">
-					<li class="two_li"><b>В прокате:</b> с {{ film.prokat }}</li>
-					<li class="two_li"><b>Формат:</b> {{ film.format }}</li>
-					<li class="two_li"><b>Жанр:</b> {% for zhanr in film.zhanr.all %} {{ zhanr }}, {% endfor %}</li>
-					<li class="two_li"><b>Производство:</b> {{ film.year }}, {{ film.proizvodstvo }}</li>
-					<li class="two_li"><b>Режисер:</b> {{ film.rezhiser }}</li>
-                    <li class="two_li"><b>Актеры:</b> {{ film.actors }}</li>
+					<li class="two_li"><b>Вместимость:</b> до {{ room.max_persons }} человек</li>
+					<li class="two_li"><b>Тип:</b> {% for type in room.room_type.all %} {{ type }}, {% endfor %}</li>
+					<li class="two_li"><b>Оборудование:</b> {{ room.equipment }}</li>
+					<li class="two_li"><b>Цена в час:</b> {{ room.price_per_hour }} руб</li>
+                    <li class="two_li"><b>Статус:</b> {% if room.is_available %}Доступна{% else %}Недоступна{% endif %}</li>
 				</ul>
 			</div>
 

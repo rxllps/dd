@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %} Кинотеатр | цены и скидки {% endblock %}
+{% block title %} Караоке-Бар | цены и скидки {% endblock %}
 {% block template %}
 	<link rel="stylesheet" href="{% static 'price.css' %}">
 {% endblock %}
@@ -8,14 +8,14 @@
 <div class="navbar">
 		<div class="navbar-inner">
 			<ul class="nav">
-				<li class="sp1"><a href="/">АФИША</a></li>
-				<li class="sp1"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+				<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 				<li class="sp1 link"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 				<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-				<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 				<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
 				{% if user.is_authenticated %}
-				    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
 				{% else %}
 				    <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
 				{% endif %}
@@ -28,20 +28,21 @@
 		<p class="body_p">
 		</p>
 		<h4>
-		Цены на билеты в кинотеатре
+		Цены на бронирование в Караоке-Баре
 		</h4>
 		<p class="p_price">
-			Цены от 30 до 60 грн;<br>
-			VIP места от 120 до 240 грн.
+			Стандартные комнаты: от 500 до 1000 руб/час;<br>
+			VIP комнаты: от 2000 до 4000 руб/час.
 		</p>
 		<p class="p_price2">
-			Сеанс показыватся при условиях:
+			Условия бронирования:
 		</p>
 			<p class="p_price">
-			до 13:00 и после 22:00 - от 3-х зрителей;<br>
-			с 13:00 до 22:00 - от 2х - зрителей.
+			Минимальное время бронирования: 1 час;<br>
+			Дисконт на групповое бронирование (от 5 часов): -15%.<br>
+			Льготы выходного дня: +20% к цене.
 		</p>
 		<p class="p_price3">
-			<b>Внимание:</b> проход со своими напитками и продуктами на сеанс запрещен правилами посещения кинотеатра!
+			<b>Внимание:</b> Отмена бронирования за менее чем 2 часа до указанного времени — платная!
 		</p>
 	{% endblock %}

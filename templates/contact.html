@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 
-{% block title %} Кинотеатр | контакты {% endblock %}
+{% block title %} Караоке-Бар | контакты {% endblock %}
 {% block template %}	<link rel="stylesheet" href="{% static 'contact.css' %}"> {% endblock %}
 {% block navbar %}
 <div class="navbar">
 		<div class="navbar-inner">
 			<ul class="nav">
-				<li class="sp1"><a href="/">АФИША</a></li>
-				<li class="sp1"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+				<li class="sp1"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 				<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 				<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-				<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 				<li class="sp1 link"><a href="/contact">КОНТАКТЫ</a></li>
                 {% if user.is_authenticated %}
-				    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|
                     <li class="sp2"><a href="/logout">Выход</a></li>
                 {% else %}
                     <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
@@ -33,28 +33,28 @@
 		Контакты
 		</h4>
 		<p class="p_price">
-			Кинотеатр находится по адресу:<br>
-			Запорожье, ул. Мира 84
+			Караоке-Бар находится по адресу:<br>
+			город, вылица Москвская, 10
 		</p>
 		<p class="p_price2">
 			Контактные телефоны: 
 		</p>
 		<ul class="p_ul_one">
-			<li>(061) 701-73-89 - бронирование, администрация</li>
-			<li>(061) 220-95-00 - автоответчик</li>
+			<li>+7 (XXX) XXX-XX-XX - бронирование, администрация</li>
+			<li>+7 (XXX) XXX-XX-XX - рецепция</li>
 		</ul>
 		<p class="p_price2">
-			Электронный адрес администрации кинотеатра: 
+			Электронный адрес администрации: 
 		</p>
 		<ul class="p_ul_one">
-			<li>first@gmail.com</li>
+			<li>info@karaoke.com</li>
 		</ul>
 		<p class="p_price2">
 			По вопросам размещения рекламы на сайте: 
 		</p>
 		<ul class="p_ul_one">
-			<li>(063) 699-06-66</li>
-			<li>second@gmail.com</li>
+			<li>+7 (XXX) XXX-XX-XX</li>
+			<li>ads@karaoke.com</li>
 		</ul>
 		<h4>
 			Карта проезда

@@ -1,20 +1,20 @@
 {% extends "base.html" %}
 {% load staticfiles %}
 {% load l10n %}
-{% block title %} Кинотеатр | афиша {% endblock %}
+{% block title %} Караоке-Бар | доступные комнаты {% endblock %}
 {% block template %}	<link rel="stylesheet" href="{% static 'main.css' %}"> {% endblock %}
 {% block navbar %}
 <div class="navbar">
 		<div class="navbar-inner">
 			<ul class="nav">
-				<li class="sp1 link"><a href="/">АФИША</a></li>
-				<li class="sp1"><a href="/soon">СКОРО В ПРОКАТЕ</a></li>
+				<li class="sp1 link"><a href="/">КОМНАТЫ</a></li>
+				<li class="sp1"><a href="/upcoming">НОВЫЕ КОМНАТЫ</a></li>
 				<li class="sp1"><a href="/price">ЦЕНЫ И СКИДКИ</a></li>
 				<li class="sp1"><a href="/guest">ГОСТЕВАЯ КНИГА</a></li>
-				<li class="sp1"><a href="/mykino">О КИНОТЕАТРЕ</a></li>
+				<li class="sp1"><a href="/my_karaoke">О КАРАОКЕ</a></li>
 				<li class="sp1"><a href="/contact">КОНТАКТЫ</a></li>
 				{% if user.is_authenticated %}
-				    <li class="sp2"><a href="/kabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
+				    <li class="sp2"><a href="/cabinet/">Кабинет</a></li>|<li class="sp2"><a href="/logout">Выход</a></li>
                 {% else %}
                     <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
                 {% endif %}
@@ -25,7 +25,7 @@
 {% block content %}
 	<div class="body">
 		<p class="body_p">
-		Ищите фильмы по дням недели:
+		Найдите свою любимую комнату:
 		</p>
 		<div class="buttons">
             {% if weekday == 1 %}
@@ -89,55 +89,52 @@
 		</div>
 
         <h4>
-            Киноафиша на {{ for_date }}
+            Наши комнаты на {{ for_date }}
 		</h4>
-            {% for seans in seanss %}
+            {% for slot in timeslots %}
                 <br>
 			<div class="one">
-				<img src="{{ seans.film.image.url }}" width="260" height="525">
+				<img src="{{ slot.room.image.url }}" width="260" height="525">
 
 			</div>
 			<div class="two">
-				<h3>{{ seans.film.name }}</h3>
-				<p class="two_p_one">{{ seans.film.secondname }}</p>
-				<p class="two_p_two">Cеансы:<span class="time"> <a href="/film/{{ seans.film.url_name }}/">расписание</a></span></p>
+				<h3>{{ slot.room.name }}</h3>
+				<p class="two_p_one">{{ slot.room.description }}</p>
+				<p class="two_p_two">Время: <span class="time"> <a href="/room/{{ slot.room.url_name }}/">расписание</a></span></p>
 				<p class="two_p_three">
-					{{ seans.film.opisanie }}
+					{{ slot.room.full_description }}
 				</p>
 				<ul class="two_ul_two">
-					<li class="two_li"><b>В прокате:</b> с {{ seans.film.prokat|date:"d M" }}</li>
-					<li class="two_li"><b>Формат:</b> {{ seans.film.format }}</li>
-					<li class="two_li"><b>Длительность:</b> {{ seans.film.dlitelnost }}</li>
-					<li class="two_li"><b>Жанр:</b> {% for zhanr in seans.film.zhanr.all %} {{ zhanr }}, {% endfor %}</li>
-					<li class="two_li"><b>Производство:</b> {{ seans.film.year }}, {{ seans.film.proizvodstvo }}</li>
-					<li class="two_li"><b>Режисер:</b> {{ seans.film.rezhiser }}</li>
-					<li class="two_li"><b>Актеры:</b> {{ seans.film.actors }}</li>
+					<li class="two_li"><b>Вместимость:</b> до {{ slot.room.max_persons }} человек</li>
+					<li class="two_li"><b>Тип:</b> {% for type in slot.room.room_type.all %} {{ type }}, {% endfor %}</li>
+					<li class="two_li"><b>Оборудование:</b> {{ slot.room.equipment }}</li>
+					<li class="two_li"><b>Цена в час:</b> {{ slot.room.price_per_hour }} руб.</li>
 				</ul>
 			</div>
 			<div class="three">
 				<ul class="three_ul">
-					<li class="three_li"><img src="{% static 'img/ico1.png' %}"><a href="/film/{{ seans.film.url_name }}/"> Расписание сеансов и цены</a></li>
-					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/treler/{{ seans.film.url_name }}/"> Смотреть трейлер</a></li>
-					<li class="three_li"><img src="{% static 'img/ico3.png' %}"><a href="/otziv/{{ seans.film.url_name }}/"> Напишите отзыв о фильме</a></li>
+					<li class="three_li"><img src="{% static 'img/ico1.png' %}"><a href="/room/{{ slot.room.url_name }}/"> Расписание и бронирование</a></li>
+					<li class="three_li"><img src="{% static 'img/ico2.png' %}"><a href="/room_video/{{ slot.room.url_name }}/"> Смотреть видео комнаты</a></li>
+					<li class="three_li"><img src="{% static 'img/ico3.png' %}"><a href="/room_review/{{ slot.room.url_name }}/"> Напишите отзыв</a></li>
 				</ul>
 			</div>
 			<br>
         {% endfor %}
-        {% if net_seansov %}
+        {% if no_timeslots %}
             <br>
             <img class="closed_img" src="{% static 'img/closed.png' %}">
             <div class="closed_text">
-                Извините, но на данный день сеансы не запланированы.
+                Извините, но на данный день все комнаты забронированы.
                 <br>
-                Приходите позже, возможно добавятся новые интересные сеансы.
+                Приходите позже, возможно появятся свободные слоты.
             </div>
 
         {% else %}
 			<div class="pagination">
 		        <div class="pagination pagination-centered">
 			<ul>
-                {% for page in seanss.paginator.page_range %}
-                    {% if page == seanss.number %}
+                {% for page in timeslots.paginator.page_range %}
+                    {% if page == timeslots.number %}
                         <li class="current"><a href="/{{ date_url }}/page/{{ page }}/">{{ page }}</a></li>
                     {% else %}
                         <li><a href="/{{ date_url }}/page/{{ page }}/">{{ page }}</a></li>

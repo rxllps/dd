@@ -2,63 +2,67 @@ from django.contrib import admin
 from django.contrib.admin import DateFieldListFilter
 
 from films.models import *
+import datetime
 
 
 # Register your models here.
 
-@admin.register(Zhanr)
-class ZhanrAdmin(admin.ModelAdmin):
+@admin.register(RoomType)
+class RoomTypeAdmin(admin.ModelAdmin):
     list_display = ('name',)
     search_fields = ('name',)
 
 
-@admin.register(Bilet)
-class BiletAdmin(admin.ModelAdmin):
-    list_display = ('id', 'seans_get', 'seans_date_get', 'seans_time_get', 'row', 'seat', 'price',)
-    search_fields = ('seans_id__film__name',)
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    list_display = ('id', 'room_name_get', 'booking_date_get', 'booking_time_get', 'persons_count', 'price',)
+    search_fields = ('timeslot_id__room__name',)
     list_filter = (
-        ('seans_id__date', DateFieldListFilter),
+        ('timeslot_id__date', DateFieldListFilter),
     )
 
 
-@admin.register(Film)
-class FilmAdmin(admin.ModelAdmin):
-    list_display = ('name', 'proizvodstvo', 'year', 'rezhiser', 'zhanr_get',)
-    search_fields = ('name', 'proizvodstvo', 'year', 'rezhiser', 'zhanr__name')
+@admin.register(Room)
+class RoomAdmin(admin.ModelAdmin):
+    list_display = ('name', 'description', 'max_persons', 'price_per_hour', 'room_type_get', 'is_available',)
+    search_fields = ('name', 'description', 'room_type__name')
+    list_filter = ('is_available', 'room_type',)
+    filter_horizontal = ('room_type',)
 
 
-@admin.register(Seans)
-class SeansAdmin(admin.ModelAdmin):
-    list_display = ('id', 'film', 'date', 'time', 'price',)
-    search_fields = ('film__name',)
+@admin.register(TimeSlot)
+class TimeSlotAdmin(admin.ModelAdmin):
+    list_display = ('id', 'room', 'date', 'time', 'price', 'is_available',)
+    search_fields = ('room__name',)
     list_filter = (
         ('date', DateFieldListFilter),
+        'is_available',
     )
     fieldsets = ((
         None, {
-            'fields': ('date', 'time', 'film', 'price')
+            'fields': ('date', 'time', 'room', 'price', 'is_available')
         }),
     )
 
     def formfield_for_foreignkey(self, db_field, request, **kwargs):
-        if db_field.name == "film":
-            kwargs["queryset"] = Film.objects.filter(prokat__lte=datetime.datetime.today().date())
-        return super(SeansAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
+        if db_field.name == "room":
+            kwargs["queryset"] = Room.objects.filter(is_available=True)
+        return super(TimeSlotAdmin, self).formfield_for_foreignkey(db_field, request, **kwargs)
 
 
-@admin.register(Bron)
-class BronAdmin(admin.ModelAdmin):
-    list_display = ('forname', 'seans_get', 'seans_date_get', 'seans_time_get', 'row', 'seat', 'price')
-    search_fields = ('seans_id__film__name', 'forname',)
+@admin.register(Reservation)
+class ReservationAdmin(admin.ModelAdmin):
+    list_display = ('id', 'room_name_get', 'reservation_date_get', 'reservation_time_get', 'forname', 'persons_count', 'price',)
+    search_fields = ('forname', 'timeslot_id__room__name')
     list_filter = (
-        ('seans_id__date', DateFieldListFilter),
+        ('timeslot_id__date', DateFieldListFilter),
     )
 
 
-@admin.register(Sell)
-class SellAdmin(admin.ModelAdmin):
-    list_display = ('get_film_name', 'get_seans_date', 'get_seans_time', 'kol_bil', 'summa',)
-    search_fields = ('seans_id__film__name', 'seans_id__date',)
+@admin.register(BookingStat)
+class BookingStatAdmin(admin.ModelAdmin):
+    list_display = ('id', 'get_room_name', 'get_booking_date', 'get_booking_time', 'total_bookings', 'total_sum',)
+    search_fields = ('timeslot_id__room__name',)
     list_filter = (
-        ('seans_id__date', DateFieldListFilter),
+        ('timeslot_id__date', DateFieldListFilter),
     )

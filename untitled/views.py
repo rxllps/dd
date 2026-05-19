@@ -10,7 +10,7 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 from datetime import datetime, timedelta
 
-from films.models import Film, Seans, Bilet, Bron, Sell
+from films.models import Room, TimeSlot, Booking, Reservation, BookingStat
 from kinouser.models import Kinouser
 from guest_otziv.models import GuestOtziv, AdminOtziv
 from otziv.models import Otziv
@@ -73,7 +73,7 @@ def login(request):
 
             return redirect("/")
         else:
-            args['login_error'] = "Net takovih"
+            args['login_error'] = "Некорректные данные для входа"
             return render(request, 'signin.html', args)
     else:
         return render(request, 'signin.html', args)
@@ -94,7 +94,7 @@ def register(request):
             return redirect('/')
 
         else:
-            args['reg_error'] = 'Error.'
+            args['reg_error'] = 'Ошибка при регистрации.'
             args['form'] = newuser_form
     return render(request, 'registr.html', args)
 
@@ -149,22 +149,22 @@ def main(request, url_date=datetime.today().date(), page_number=1):
         args['weekday'] = datetime.isoweekday(datetime.strptime(url_date, '%Y-%m-%d').date())
     else:
         args['weekday'] = datetime.isoweekday(url_date)
-    seanss = Seans.objects.filter(date=str(url_date))
+    timeslots = TimeSlot.objects.filter(date=str(url_date))
     a = b = []
 
-    for seans_ in seanss:
-        if seans_.film not in a:
-            a.append(seans_.film)
-            b.append(seans_)
+    for slot in timeslots:
+        if slot.room not in a:
+            a.append(slot.room)
+            b.append(slot)
 
     current_page = Paginator(b, 3)
-    args['seanss'] = current_page.page(page_number)
+    args['timeslots'] = current_page.page(page_number)
     if len(b) == 0:
-        args['net_seansov'] = True
+        args['no_timeslots'] = True
     return render_to_response('test_film.html', args)
 
 
-def mykino(request):
+def mykaraoke(request):
     args = dict()
     args['user'] = request.user
     return render_to_response('mykino.html', args)
@@ -176,41 +176,41 @@ def price(request):
     return render_to_response('price.html', args)
 
 
-def seans(request, name=''):
+def room_detail(request, name=''):
     args = dict()
-    seans_data = {}
+    timeslots_data = {}
     args['user'] = request.user
-    film = Seans.objects.filter(film__url_name=name)
+    room = TimeSlot.objects.filter(room__url_name=name)
 
-    if film:
-        seanss = Seans.objects.filter(film__url_name=name,
-                                      date__gt=(datetime.today().date() - timedelta(days=1)))
-        args['seanss'] = seanss
+    if room:
+        timeslots = TimeSlot.objects.filter(room__url_name=name,
+                                            date__gt=(datetime.today().date() - timedelta(days=1)))
+        args['timeslots'] = timeslots
 
         a = 0
         for i in range(10):
             date = datetime.today().date() + timedelta(days=a)
             a += 1
-            if Seans.objects.filter(film__url_name=name, date=date):
-                seans_data[str(date)] = []
-                if (len(Seans.objects.filter(film__url_name=name, date=date))) > 1:
-                    for i_ in range(len(Seans.objects.filter(film__url_name=name, date=date))):
-                        if Seans.objects.filter(film__url_name=name, date=date)[i_].date == datetime.today().date():
-                            seans_data[str(date)].append(
-                                'Время сеанса : ' + str(Seans.objects.filter(film__url_name=name, date=date)[i_].time))
-                            seans_data[str(date)].append(Seans.objects.filter(film__url_name=name, date=date)[i_].price)
-                            seans_data[str(date)].append(
-                                'seans_id=' + str(Seans.objects.filter(film__url_name=name, date=date)[i_].id))
+            if TimeSlot.objects.filter(room__url_name=name, date=date):
+                timeslots_data[str(date)] = []
+                if (len(TimeSlot.objects.filter(room__url_name=name, date=date))) > 1:
+                    for i_ in range(len(TimeSlot.objects.filter(room__url_name=name, date=date))):
+                        if TimeSlot.objects.filter(room__url_name=name, date=date)[i_].date == datetime.today().date():
+                            timeslots_data[str(date)].append(
+                                'Время: ' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].time))
+                            timeslots_data[str(date)].append(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].price)
+                            timeslots_data[str(date)].append(
+                                'slot_id=' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].id))
                 else:
-                    if Seans.objects.filter(film__url_name=name, date=date)[0].date >= datetime.today().date():
-                        seans_data[str(date)].append(
-                            'Время сеанса : ' + str(Seans.objects.filter(film__url_name=name, date=date)[0].time))
-                        seans_data[str(date)].append(Seans.objects.filter(film__url_name=name, date=date)[0].price)
-                        seans_data[str(date)].append(
-                            'seans_id=' + str(Seans.objects.filter(film__url_name=name, date=date)[0].id))
+                    if TimeSlot.objects.filter(room__url_name=name, date=date)[0].date >= datetime.today().date():
+                        timeslots_data[str(date)].append(
+                            'Время: ' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[0].time))
+                        timeslots_data[str(date)].append(TimeSlot.objects.filter(room__url_name=name, date=date)[0].price)
+                        timeslots_data[str(date)].append(
+                            'slot_id=' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[0].id))
 
-        args['film'] = Film.objects.filter(url_name=name)[0]
-        args['seans_data'] = seans_data
+        args['room'] = Room.objects.filter(url_name=name)[0]
+        args['timeslots_data'] = timeslots_data
 
         return render_to_response('seans.html', args)
 
@@ -218,157 +218,134 @@ def seans(request, name=''):
 
 
 @csrf_exempt
-def buy(request, seans_id):
+def booking(request, slot_id):
     args = dict()
     if request.method == 'POST':
         user = request.user
-        if request.POST.get('usluga', ) == 'buy':
-            seans_id = Seans.objects.get(id=request.POST.get('seans_id', ''))
-            new_bilets = request.POST.get('tikets', '')[:-1]
-
-            for i in new_bilets.split(','):
-                bilet = Bilet(row=i.split(':')[0], 
-                              seat=i.split(':')[1], 
-                              seans_id=seans_id, price=i.split(':')[2])
-                bilet.save()
-                user.bilets.add(bilet)
+        if request.POST.get('action', ) == 'book':
+            slot_id = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
+            persons = request.POST.get('persons', '1')
+            
+            booking_obj = Booking(
+                timeslot_id=slot_id,
+                persons_count=int(persons),
+                price=int(persons) * slot_id.price
+            )
+            booking_obj.save()
+            user.bookings.add(booking_obj)
 
             return HttpResponse('ok', content_type='text/html')
 
-        elif request.POST.get('usluga', ) == 'bron':
-            seans_id = Seans.objects.get(id=request.POST.get('seans_id', ''))
-            new_bilets = request.POST.get('tikets', '')[:-1]
+        elif request.POST.get('action', ) == 'reserve':
+            slot_id = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
+            persons = request.POST.get('persons', '1')
             name_user = request.user.firstname + " " + request.user.lastname
 
-            for i in new_bilets.split(','):
-                bilet = Bron(row=i.split(':')[0], seat=i.split(':')[1], 
-                             seans_id=seans_id, forname=name_user,
-                             price=i.split(':')[2])
-                bilet.save()
-                user.bron.add(bilet)
+            reservation = Reservation(
+                timeslot_id=slot_id,
+                forname=name_user,
+                persons_count=int(persons),
+                price=int(persons) * slot_id.price
+            )
+            reservation.save()
+            user.reservations.add(reservation)
 
             return HttpResponse('ok', content_type='text/html')
     else:
-        seans_ = Seans.objects.filter(id=seans_id)
+        slot = TimeSlot.objects.filter(id=slot_id)
         args['user'] = request.user
-        args['seans'] = seans_[0]
-        red_bilet = ''
-        black_bilet = ''
-        for i in Bilet.objects.filter(seans_id=seans_id):
-            red_bilet += (str(i.row) + ',' + str(i.seat)) + ";"
-
-        for i in Bron.objects.filter(seans_id=seans_id):
-            black_bilet += (str(i.row) + ',' + str(i.seat)) + ";"
-
-        prices = seans_[0].price.split(',')
-        price1, price2 = prices[0], prices[1]
-        args['price1'] = price1
-        args['price2'] = price2
-        args['red_bilet'] = red_bilet
-        args['black_bilet'] = black_bilet
+        args['slot'] = slot[0]
+        
+        price = slot[0].price
+        args['price'] = price
         if request.user.is_authenticated():
             args['user_name'] = request.user.firstname + " " + request.user.lastname
 
         return render(request, 'buy_window.html', args)
 
 
-def soon(request, page_number=1):
+def upcoming_rooms(request, page_number=1):
     args = dict()
     args['user'] = request.user
 
-    films = Film.objects.filter(prokat__gt=(datetime.today().date()) + timedelta(days=30))
-    current_page = Paginator(films, 3)
-    args['films'] = current_page.page(page_number)
+    rooms = Room.objects.filter(is_available=True)
+    current_page = Paginator(rooms, 3)
+    args['rooms'] = current_page.page(page_number)
 
     return render_to_response('soon.html', args)
 
 
-def treler(request, name=''):
+def room_video(request, name=''):
     args = dict()
     args['user'] = request.user
 
-    film = Film.objects.filter(url_name=name)
-    if film:
-        args['filmm'] = film
-        args['film'] = film[0]
+    room = Room.objects.filter(url_name=name)
+    if room:
+        args['rooms'] = room
+        args['room'] = room[0]
         return render_to_response('treler.html', args)
 
     return redirect('/')
 
 
 @csrf_protect
-def otziv(request, name=''):
+def room_review(request, name=''):
     args = dict()
     args['user'] = request.user
-    args['film'] = Film.objects.filter(url_name=name)[0]
-    args['comment'] = Otziv.objects.filter(film__url_name=name)
+    args['room'] = Room.objects.filter(url_name=name)[0]
+    args['comments'] = Otziv.objects.filter(room__url_name=name)
     if request.method == 'POST':
         Otziv(name=request.POST.get('name', ''), 
               email=request.POST.get('email', ''),
               text=request.POST.get('comment', ''), 
-              film=Film.objects.get(url_name=name),
-              date=datetime.now().date())
-        .save()
+              room=Room.objects.get(url_name=name),
+              date=datetime.now().date()).save()
 
         return render(request, 'otziv.html', args)
     else:
-        if Film.objects.filter(url_name=name):
+        if Room.objects.filter(url_name=name):
             return render(request, 'otziv.html', args)
 
     return redirect('/')
 
 
-@csrf_exempt
-def test_buy(request):
-    seans_id = Seans.objects.get(id=request.POST.get('seans_id', ''))
-    new_bilets = request.POST.get('tikets', '')[:-1]
-
-    for i in new_bilets.split(','):
-        Bilet(row=i[0], seat=i[2], seans_id=seans_id)
-
-    return HttpResponse('ok', content_type='text/html')
-
-
-def create_bilet(bilet):
-    c = canvas.Canvas(settings.MEDIA_ROOT + "bilets.pdf", pagesize=(607, 265))
+def create_booking_receipt(booking):
+    c = canvas.Canvas(settings.MEDIA_ROOT + "booking_receipt.pdf", pagesize=(607, 265))
 
     c.drawImage(image="static/img/bilet.png", x=0, y=0)
     pdfmetrics.registerFont(TTFont('font', 'Arial.TTF'))
     pdfmetrics.registerFont(TTFont('test', 'static/fonts/BuxtonSketch.ttf'))
     c.setFont("font", 20)
-    c.drawString(130, 170, 'Место в зале:')
-    c.drawString(280, 170, 'Ряд: ' + str(bilet.row) + ',')
-    c.drawString(360, 170, 'Место: 15' + str(bilet.seat))
+    c.drawString(130, 170, 'Количество человек:')
+    c.drawString(360, 170, str(booking.persons_count))
     c.setFont("test", 28)
-    c.drawString(130, 230, bilet.seans_id.film.name)
+    c.drawString(130, 230, booking.timeslot_id.room.name)
     c.setFont("font", 21)
-    c.drawString(130, 120, str(bilet.seans_id.date))
-    c.drawString(350, 120, bilet.seans_id.time)
+    c.drawString(130, 120, str(booking.timeslot_id.date))
+    c.drawString(350, 120, booking.timeslot_id.time)
     c.setFont("font", 25)
-    c.drawString(30, 50, 'Цена: ' + str(bilet.price))
+    c.drawString(30, 50, 'Цена: ' + str(booking.price))
     c.setFont("font", 20)
-    c.drawString(520, 230, str(bilet.id))
+    c.drawString(520, 230, str(booking.id))
 
     c.showPage()
 
     c.save()
 
-    # startfile(settings.MEDIA_ROOT + "bilets.pdf")
 
-
-def print_bilet(request):
-    admin = 'bilet_true'
+def print_booking(request):
+    admin = 'booking_true'
     try:
-        bilet = Bilet.objects.get(id=request.POST.get('id_bilet', ''))
-        create_bilet(bilet)
+        booking = Booking.objects.get(id=request.POST.get('id_booking', ''))
+        create_booking_receipt(booking)
     except Exception as e:
         print(e)
-        admin = 'bilet_false'
+        admin = 'booking_false'
 
-    return kabinet(request, admin=admin)
+    return karaoke_cabinet(request, admin=admin)
 
 
-def kabinet(request, page_number=1, admin='0'):
+def karaoke_cabinet(request, page_number=1, admin='0'):
     args = dict()
 
     user = request.user
@@ -381,183 +358,182 @@ def kabinet(request, page_number=1, admin='0'):
         if not request.user.is_superuser:
 
             dates = []
-            for bilet in user.bilets.all():
-                dates.append(Seans.objects.get(id=bilet.seans_id.id).date)
+            for booking in user.bookings.all():
+                dates.append(TimeSlot.objects.get(id=booking.timeslot_id.id).date)
 
-            for bron in user.bron.all():
-                dates.append(Seans.objects.get(id=bron.seans_id.id).date)
+            for reservation in user.reservations.all():
+                dates.append(TimeSlot.objects.get(id=reservation.timeslot_id.id).date)
             dates.sort()
             dates.reverse()
-            bilets = []
+            items = []
 
             for date in dates:
-                for bilet in user.bilets.all():
-                    if bilet.seans_id.date == date:
-                        if bilet not in bilets:
-                            bilets.append(bilet)
-                for bron in user.bron.all():
-                    if bron.seans_id.date == date:
-                        if bron in bilets:
+                for booking in user.bookings.all():
+                    if booking.timeslot_id.date == date:
+                        if booking not in items:
+                            items.append(booking)
+                for reservation in user.reservations.all():
+                    if reservation.timeslot_id.date == date:
+                        if reservation in items:
                             pass
                         else:
-                            bilets.append(bron)
+                            items.append(reservation)
 
-            current_page = Paginator(bilets, 6)
-            args['bilets'] = current_page.page(page_number)
+            current_page = Paginator(items, 6)
+            args['items'] = current_page.page(page_number)
 
         else:
-            if admin == 'bilet_true':
+            if admin == 'booking_true':
                 args['user_name'] = Kinouser.objects.get(
-                    bilets=Bilet.objects.get(id=request.POST.get('id_bilet', ''))).lastname
-                args['seans_name'] = Bilet.objects.get(id=request.POST.get('id_bilet', '')).seans_id.film.name
+                    bookings=Booking.objects.get(id=request.POST.get('id_booking', ''))).lastname
+                args['room_name'] = Booking.objects.get(id=request.POST.get('id_booking', '')).timeslot_id.room.name
 
-            elif admin == 'bilet_false':
-                args['error'] = 'Данного билета не существует. Проверьте правильность кода билета.'
+            elif admin == 'booking_false':
+                args['error'] = 'Данного бронирования не существует. Проверьте правильность кода.'
 
-            elif admin == 'seans_true':
-                my_seans = Seans.objects.get(id=request.POST.get('id_seans', ''))
-                args['seans_date'] = my_seans.date
-                args['seans_name'] = my_seans.film.name
-                args['seans_time'] = my_seans.time
+            elif admin == 'slot_true':
+                my_slot = TimeSlot.objects.get(id=request.POST.get('id_slot', ''))
+                args['slot_date'] = my_slot.date
+                args['room_name'] = my_slot.room.name
+                args['slot_time'] = my_slot.time
 
-            elif admin == 'seans_false':
-                args['seans_false'] = 'На данный сеанс еще не проданы билеты.'
+            elif admin == 'slot_false':
+                args['slot_false'] = 'На данный слот еще нет бронирований.'
 
             elif admin == 'date_null' or admin == 'date_false':
-                args['date_error'] = 'На данный день нет купленных билетов.'
+                args['date_error'] = 'На данный день нет бронирований.'
 
     return render_to_response('kabinet.html', args)
 
 
-def print_otchet(request, variety):
-    if variety == 'seans':
-        admin = 'seans_true'
+def print_report(request, report_type):
+    if report_type == 'slot':
+        admin = 'slot_true'
         try:
-            sells = [Sell.objects.get(seans_id=request.POST.get('id_seans', ''))]
-            create_otchet(sells, 'seans')
+            stats = [BookingStat.objects.get(timeslot_id=request.POST.get('id_slot', ''))]
+            create_report(stats, 'slot')
         except Exception as e:
             print(e)
-            admin = 'seans_false'
+            admin = 'slot_false'
 
-        return kabinet(request, admin=admin)
+        return karaoke_cabinet(request, admin=admin)
 
-    elif variety == 'date':
+    elif report_type == 'date':
         admin = 'date_true'
         try:
-            sells = Sell.objects.filter(seans_id__date=request.POST.get('date_seans', ''))
-            if sells.count() > 0:
-                create_otchet(sells, 'date')
+            stats = BookingStat.objects.filter(timeslot_id__date=request.POST.get('date_slot', ''))
+            if stats.count() > 0:
+                create_report(stats, 'date')
             else:
                 admin = 'date_null'
         except Exception as e:
             print(e)
             admin = 'date_false'
 
-        return kabinet(request, admin=admin)
+        return karaoke_cabinet(request, admin=admin)
 
-    elif variety == 'interval':
+    elif report_type == 'interval':
         admin = 'interval_true'
         try:
-            sells = Sell.objects.filter(
-                seans_id__date__range=[request.POST.get('date1_seans', ''), 
-                                       request.POST.get('date2_seans', '')])
-            create_otchet(sells, 'interval')
+            stats = BookingStat.objects.filter(
+                timeslot_id__date__range=[request.POST.get('date1_slot', ''), 
+                                          request.POST.get('date2_slot', '')])
+            create_report(stats, 'interval')
         except Exception as e:
             print(e)
             admin = 'interval_false'
 
-        return kabinet(request, admin=admin)
+        return karaoke_cabinet(request, admin=admin)
 
-    elif variety == 'week':
+    elif report_type == 'week':
         admin = 'week_true'
         try:
             today = datetime.now().date()
             week = datetime.today().date() - timedelta(days=7)
-            sells = Sell.objects.filter(seans_id__date__range=[week, today])
+            stats = BookingStat.objects.filter(timeslot_id__date__range=[week, today])
 
-            create_otchet(sells, 'week')
+            create_report(stats, 'week')
         except Exception as e:
             print(e)
             admin = 'week_false'
 
-        return kabinet(request, admin=admin)
+        return karaoke_cabinet(request, admin=admin)
 
-    elif variety == 'month':
+    elif report_type == 'month':
         admin = 'month_true'
         try:
             today = datetime.now().date()
             month = datetime.today().date() - timedelta(days=30)
-            sells = Sell.objects.filter(seans_id__date__range=[month, today])
+            stats = BookingStat.objects.filter(timeslot_id__date__range=[month, today])
 
-            create_otchet(sells, 'month')
+            create_report(stats, 'month')
         except Exception as e:
             print(e)
             admin = 'month_false'
 
-        return kabinet(request, admin=admin)
-    elif variety == 'halfyear':
+        return karaoke_cabinet(request, admin=admin)
+
+    elif report_type == 'halfyear':
         admin = 'half_true'
         try:
             today = datetime.now().date()
             halfyear = datetime.today().date() - timedelta(days=180)
-            sells = Sell.objects.filter(seans_id__date__range=[halfyear, today])
-            create_otchet(sells, 'halfyear')
+            stats = BookingStat.objects.filter(timeslot_id__date__range=[halfyear, today])
+            create_report(stats, 'halfyear')
         except Exception as e:
             print(e)
             admin = 'half_false'
 
-        return kabinet(request, admin=admin)
-    return kabinet(request)
+        return karaoke_cabinet(request, admin=admin)
+    return karaoke_cabinet(request)
 
 
-def create_otchet(selss, variety):
+def create_report(stats, report_type):
     c = canvas.Canvas(settings.MEDIA_ROOT + "report.pdf")
     pdfmetrics.registerFont(TTFont('font', 'Arial.TTF'))
     pdfmetrics.registerFont(TTFont('test', 'static/fonts/BuxtonSketch.ttf'))
     c.setFont("test", 20)
 
-    if variety == 'seans':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра за сеанс')
-    elif variety == 'date':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра по дате')
-    elif variety == 'interval':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра по датам')
-    elif variety == 'week':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра за неделю')
-    elif variety == 'month':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра за месяц')
-    elif variety == 'halfyear':
-        c.drawString(130, 800, 'Отчет по продаже билетов кинотеатра за полгода')
+    if report_type == 'slot':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке по временному слоту')
+    elif report_type == 'date':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке по дате')
+    elif report_type == 'interval':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке по датам')
+    elif report_type == 'week':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке за неделю')
+    elif report_type == 'month':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке за месяц')
+    elif report_type == 'halfyear':
+        c.drawString(130, 800, 'Отчет по бронированиям караоке за полгода')
 
     c.line(50, 780, 550, 780)
     c.line(50, 50, 550, 50)
     y = 740
     k = 1
     index = 1
-    for i in selss:
+    for stat in stats:
         if k == 6:
             c.showPage()
             c.setFont("test", 20)
-            c.drawString(160, 800, 'Отчет по продаже билетов кинотеатра')
+            c.drawString(160, 800, 'Отчет по бронированиям караоке')
             c.line(50, 780, 550, 780)
             c.line(50, 50, 550, 50)
             k = 1
             y = 740
         c.drawString(50, y, str(index))
-        c.drawString(100, y, i.seans_id.film.name)
-        c.drawString(160, y - 25, 'Дата сеанса:')
-        c.drawString(160, y - 50, 'Время сеанса:')
-        c.drawString(160, y - 75, 'Количество проданных билетов: ')
+        c.drawString(100, y, stat.timeslot_id.room.name)
+        c.drawString(160, y - 25, 'Дата:')
+        c.drawString(160, y - 50, 'Время:')
+        c.drawString(160, y - 75, 'Количество бронирований: ')
         c.drawString(160, y - 100, 'Общая выручка : ')
-        c.drawString(465, y - 25, str(i.seans_id.date))
-        c.drawString(465, y - 50, str(i.seans_id.time))
-        c.drawString(465, y - 75, str(i.kol_bil))
-        c.drawString(465, y - 100, str(i.summa) + " грн")
+        c.drawString(465, y - 25, str(stat.timeslot_id.date))
+        c.drawString(465, y - 50, str(stat.timeslot_id.time))
+        c.drawString(465, y - 75, str(stat.total_bookings))
+        c.drawString(465, y - 100, str(stat.total_sum) + " руб")
         y -= 140
         k += 1
         index += 1
 
     c.save()
     c.showPage()
-
-    # startfile(settings.MEDIA_ROOT + 'report.pdf')

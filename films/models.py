@@ -6,26 +6,23 @@ import datetime
 
 # Create your models here.
 
-class Zhanr(models.Model):
-    name = models.CharField(max_length=15)
+class RoomType(models.Model):
+    name = models.CharField(max_length=50)
 
     def __str__(self):
         return self.name
 
 
-class Film(models.Model):
+class Room(models.Model):
     name = models.CharField(max_length=50)
-    secondname = models.CharField(max_length=50)
-    url_name = models.CharField(max_length=50)
-    opisanie = models.TextField()
-    dlitelnost = models.FloatField()
-    format = models.CharField(max_length=3)
-    proizvodstvo = models.CharField(max_length=20)
-    rezhiser = models.CharField(max_length=50)
-    actors = models.TextField()
-    year = models.IntegerField()
+    description = models.CharField(max_length=100)
+    url_name = models.CharField(max_length=50, unique=True)
+    full_description = models.TextField()
+    max_persons = models.IntegerField()
+    equipment = models.TextField()
+    price_per_hour = models.IntegerField()
     image = models.ImageField(
-        upload_to="media/films",
+        upload_to="media/rooms",
         height_field="image_height",
         width_field="image_width"
     )
@@ -41,9 +38,9 @@ class Film(models.Model):
         editable=False,
         default="260"
     )
-    trailer = models.URLField()
-    prokat = models.DateField(blank=True)
-    zhanr = models.ManyToManyField(Zhanr)
+    video_url = models.URLField(blank=True, null=True)
+    room_type = models.ManyToManyField(RoomType)
+    is_available = models.BooleanField(default=True)
 
     def __unicode__(self):
         return self.name
@@ -51,33 +48,34 @@ class Film(models.Model):
     def __str__(self):
         return self.name
 
-    def zhanr_get(self):
+    def room_type_get(self):
         a = ''
-        for i in self.zhanr.all():
+        for i in self.room_type.all():
             a += i.name + ','
 
-        return a[:-1]
+        return a[:-1] if a else ''
 
 
-class Seans(models.Model):
+class TimeSlot(models.Model):
     date = models.DateField()
     time = models.CharField(max_length=30)
-    film = models.ForeignKey(Film)
-    price = models.CommaSeparatedIntegerField(max_length=15)
+    room = models.ForeignKey(Room)
+    price = models.IntegerField()
+    is_available = models.BooleanField(default=True)
 
     def __unicode__(self):
-        name = self.film + "," + str(self.date) + " " + str(self.time)
+        name = str(self.room.name) + ", " + str(self.date) + " " + str(self.time)
         return name
 
     def __str__(self):
-        name = self.film.name + ", " + str(self.date) + " " + str(self.time)[:5]
+        name = str(self.room.name) + ", " + str(self.date) + " " + str(self.time)[:5]
         return name
 
-    def film_name_get(self):
-        return self.film.name
+    def room_name_get(self):
+        return self.room.name
 
     def save(self, *args, **kwargs):
-        for seans in Seans.objects.filter(date=getattr(self, 'date')):
+        for slot in TimeSlot.objects.filter(date=getattr(self, 'date'), room=getattr(self, 'room')):
 
             time1 = datetime.datetime.combine(
                 getattr(self, 'date'),
@@ -87,17 +85,17 @@ class Seans(models.Model):
             )
             time2 = datetime.datetime.now()
 
-            if getattr(self, 'time') == seans.time or time1 < time2:
-                raise ValidationError('Выбрано неподходящее время для сеанса.')
+            if getattr(self, 'time') == slot.time or time1 < time2:
+                raise ValidationError('Выбрано неподходящее время для бронирования.')
 
-        super(Seans, self).save(*args, **kwargs)
+        super(TimeSlot, self).save(*args, **kwargs)
 
 
-class Bron(models.Model):
-    seans_id = models.ForeignKey(Seans)
+class Reservation(models.Model):
+    timeslot_id = models.ForeignKey(TimeSlot)
     forname = models.CharField(max_length=20)
-    row = models.IntegerField(default=0)
-    seat = models.IntegerField(default=0)
+    persons_count = models.IntegerField(default=0)
+    special_requests = models.TextField(blank=True)
     price = models.IntegerField(default=0)
 
     def __unicode__(self):
@@ -106,29 +104,29 @@ class Bron(models.Model):
     def __str__(self):
         return self.forname
 
-    def seans_get(self):
-        return self.seans_id.film.name
+    def room_name_get(self):
+        return self.timeslot_id.room.name
 
-    def seans_date_get(self):
-        return self.seans_id.date
+    def reservation_date_get(self):
+        return self.timeslot_id.date
 
-    def seans_time_get(self):
-        return self.seans_id.time
+    def reservation_time_get(self):
+        return self.timeslot_id.time
 
 
-class Bilet(models.Model):
-    seans_id = models.ForeignKey(Seans)
-    row = models.IntegerField(default=0)
-    seat = models.IntegerField(default=0)
+class Booking(models.Model):
+    timeslot_id = models.ForeignKey(TimeSlot)
+    persons_count = models.IntegerField(default=0)
     price = models.IntegerField(default=0)
+    booking_date = models.DateTimeField(auto_now_add=True)
 
     def save(self, *args, **kwargs):
-        sell, created = Sell.objects.get_or_create(seans_id=getattr(self, 'seans_id'))
-        sell.kol_bil += 1
-        sell.summa += int(getattr(self, 'price'))
-        sell.save()
+        booking_stat, created = BookingStat.objects.get_or_create(timeslot_id=getattr(self, 'timeslot_id'))
+        booking_stat.total_bookings += 1
+        booking_stat.total_sum += int(getattr(self, 'price'))
+        booking_stat.save()
 
-        super(Bilet, self).save(*args, **kwargs)
+        super(Booking, self).save(*args, **kwargs)
 
     def __unicode__(self):
         return str(self.id)
@@ -136,32 +134,33 @@ class Bilet(models.Model):
     def __str__(self):
         return str(self.id)
 
-    def seans_get(self):
-        return self.seans_id.film.name
+    def room_name_get(self):
+        return self.timeslot_id.room.name
 
-    def seans_date_get(self):
-        return self.seans_id.date
+    def booking_date_get(self):
+        return self.timeslot_id.date
 
-    def seans_time_get(self):
-        return self.seans_id.time
+    def booking_time_get(self):
+        return self.timeslot_id.time
 
 
-class Sell(models.Model):
-    seans_id = models.ForeignKey(Seans)
-    kol_bil = models.IntegerField(default=0)
-    summa = models.IntegerField(default=0)
+class BookingStat(models.Model):
+    timeslot_id = models.ForeignKey(TimeSlot)
+    total_bookings = models.IntegerField(default=0)
+    total_sum = models.IntegerField(default=0)
 
     def __unicode__(self):
-        return str(self.seans_id)
+        return str(self.timeslot_id)
 
     def __str__(self):
-        return str(self.seans_id)
+        return str(self.timeslot_id)
 
-    def get_film_name(self):
-        return self.seans_id.film.name
+    def get_room_name(self):
+        return self.timeslot_id.room.name
 
-    def get_seans_date(self):
-        return self.seans_id.date
+    def get_booking_date(self):
+        return self.timeslot_id.date
 
-    def get_seans_time(self):
-        return self.seans_id.time
+    def get_booking_time(self):
+        return self.timeslot_id.time
+

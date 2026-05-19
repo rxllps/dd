@@ -3,7 +3,7 @@ from __future__ import unicode_literals
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
 
-from films.models import Bron, Bilet
+from films.models import Booking, Reservation
 
 
 # Create your models here.
@@ -54,8 +54,8 @@ class Kinouser(AbstractBaseUser, PermissionsMixin):
         blank=False
     )
 
-    bilets = models.ManyToManyField(Bilet, default=0)
-    bron = models.ManyToManyField(Bron, default=0)
+    bookings = models.ManyToManyField(Booking, default=0)
+    reservations = models.ManyToManyField(Reservation, default=0)
 
     is_active = models.BooleanField(
         'Active',
