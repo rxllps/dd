@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %} Оплата успешна {% endblock %}
+{% block content %}
+<div class="body">
+    <h3>Оплата прошла успешно</h3>
+    <p>Бронирование #{{ booking.id }} подтверждено.</p>
+    <p>{{ booking.timeslot_id.room.name }} — {{ booking.timeslot_id.date }}, {{ booking.timeslot_id.time }}</p>
+    <p>Сумма: {{ booking.price }} руб.</p>
+    <a href="/cabinet/">Личный кабинет</a> |
+    <a href="/print_booking/" onclick="document.getElementById('print-form').submit(); return false;">Печать квитанции</a>
+    <form id="print-form" method="post" action="/print_booking/" style="display:none;">
+        {% csrf_token %}
+        <input type="hidden" name="id_booking" value="{{ booking.id }}">
+    </form>
+</div>
+{% endblock %}

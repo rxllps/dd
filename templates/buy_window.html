@@ -3,124 +3,55 @@
 <html>
 <head>
     <meta charset="utf-8">
-    <title>Покупка билета</title>
-    <link href="{% static 'buy_window.css' %} " rel="stylesheet">
-	<script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
-	<script type="text/javascript" src="{% static 'js/js.js' %}"></script>
-	<script type="text/javascript" src="{% static 'js/jq.js' %}"></script>
+    <title>Бронирование — {{ room.name }}</title>
+    <link href="{% static 'buy_window.css' %}" rel="stylesheet">
+    <script type="text/javascript" src="{% static 'js/jquery.js' %}"></script>
+    <script type="text/javascript" src="{% static 'js/booking.js' %}"></script>
 </head>
 <body>
-<table width="1000px" id="korzina">
+<div class="booking-wrap">
     {% csrf_token %}
+    <h2>Бронирование: {{ room.name }}</h2>
+    <p>{{ slot.date }} · {{ slot.time }} · до {{ max_persons }} чел.</p>
+
     {% if user.is_authenticated %}
-        Здравствуйте, {{ user_name }}!
+        <p>Здравствуйте, {{ user_name }}!</p>
     {% else %}
-        Войдите в свой аккаунт, чтобы купить билет.
+        <p class="error">Войдите в аккаунт для бронирования.</p>
     {% endif %}
 
+    <form id="booking-form">
+        <input type="hidden" name="slot_id" id="slot_id" value="{{ slot.id }}">
 
-		<tr width="1000px">
-			<td>
-				<img class='img_film' src="{{ seans.film.image.url }}" id="test" width="80px" height="100px">
-			</td>
-			<td class="one_td">
-				{{ seans.film.name }}<br><br>сеанс: {{ seans.date }}, {{ seans.time }}<br> Большой кинозал
-			</td>
-			<td rowspan=10>
-				<table class="korzina">
-					<tr>
-						<td colspan=2 class="name_mest">
-							<h2>КОРЗИНА</h2><br><hr>
-						</td>
-					</tr>
-					<tr>
-						<td width="200px" class="summ_td">
-							{{ seans.film.name }}
-						</td>
-						<td class="second_td" width="100px">
-                            {{ seans.date }}, {{ seans.time }}
-						</td>
-					</tr>
-					<tr>
-						<td colspan=2>
-							<hr>
-						</td>
-					</tr>
-					<table>
-						<tr>
-							<td colspan=2>
-								<hr>
-							</td>
-						</tr>
-						<tr class="summa_td">
-							<td class="summ_td">
-								Общая стоимость
-							</td>
-							<td class="second_td">
-								<label id="summa">0</label> грн.
-							</td>
-						</tr>
-					<table>
-                        <tr>
-                            <td>
-                                <button href="#" class="cancel" id="cancel"> Очистить корзину </button>
-                            </td>
-                        </tr>
-				</table>
-			</td>
-		</tr>
-<!-- 		<tr>
-			<td colspan=2>
-				<h4>Выберите нужные места нажав на место правой клавишей мыши.</h4>
-			</td>
-		</tr> -->
-		<tr>
-			<td colspan=2 class="zal name_mest">
-				Ваше место <img src="{%  static 'img/red.png' %}" width="20px" style="border: 1px solid black;">
-                Свободно <img src="{%  static 'img/green.png' %}" width="20px" style="border: 1px solid black;">
-                Диван <img src="{%  static 'img/yellow.png' %}" width="20px" style="border: 1px solid black;">
-                Занято <img src="{%  static 'img/black.png' %}" width="20px" style="border: 1px solid black;">
-			</td>
-		</tr>
-		<tr>
-			<td colspan=2 class="zal">
-				<hr>
-			</td>
-		</tr>
-		<tr>
-			<td colspan=2 class="zal" id="myzal">
-				
-			</td>
-		</tr>
-		<tr>
-			<td colspan=2 class="zal" id="vipzal">
-				
-			</td>
-		</tr>
-		<tr>
-			<td>
-                {% if user.is_authenticated %}
-                    <button href="#" class="buy"> Купить </button>
-                {% else %}
-                    <button href="#" class="buy_false"> Купить </button>
-                {% endif %}
-			</td>
-			<td>
-				{% if user.is_authenticated %}
-                    <button href="#" class="bron"> Забронировать </button>
-                {% else %}
-                    <button href="#" class="bron_false"> Заброниовать </button>
-                {% endif %}
-			</td>
-		</tr>
-	</table>
-	<input type="hidden" value="{{ price1 }}" id="hid1">
-	<input type="hidden" value="{{ price2 }}" id="hid2">
-    <input type="hidden" value="{{ seans.id }}" id="seans_id">
-    <input type="hidden" value="{{ red_bilet }}" id="red_bilet">
-    <input type="hidden" value="{{ black_bilet }}" id="black_bilet">
-	<div class="cssload-container">
-        <div class="cssload-loading"><i></i><i></i><i></i><i></i></div>
-    </div>
+        <label>Количество гостей</label>
+        <input type="number" name="persons" id="persons" value="2" min="1" max="{{ max_persons }}">
+
+        <label>Длительность (часов)</label>
+        <input type="number" name="duration_hours" id="duration_hours" value="1" min="1" max="8">
+
+        <label>Пакет услуг</label>
+        <select name="package_id" id="package_id">
+            <option value="">Без пакета (почасовая оплата)</option>
+            {% for pkg in packages %}
+            <option value="{{ pkg.id }}" data-hours="{{ pkg.duration_hours }}">
+                {{ pkg.name }} — {{ pkg.base_price }} руб. ({{ pkg.duration_hours }} ч.)
+            </option>
+            {% endfor %}
+        </select>
+
+        <label>Пожелания</label>
+        <textarea name="special_requests" id="special_requests" rows="3"></textarea>
+
+        <p class="total">Итого: <strong id="total_price">{{ price }}</strong> руб.</p>
+        <p class="hint">Выходные +20%. От 5 часов — скидка 15%.</p>
+
+        {% if user.is_authenticated %}
+            <button type="button" id="btn-book" class="buy">Оплатить онлайн</button>
+            <button type="button" id="btn-reserve" class="bron">Забронировать без оплаты</button>
+        {% endif %}
+    </form>
+
+    <div id="booking-message"></div>
+</div>
 </body>
 </html>

@@ -123,8 +123,17 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/1.9/howto/static-files/
 
-MEDIA_ROOT = [os.path.join(BASE_DIR, 'media'), ]
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 MEDIA_URL = '/media/'
+
+# Платежи: mock — для разработки; yookassa — при настройке ключей
+PAYMENT_PROVIDER = 'mock'
+YOOKASSA_SHOP_ID = ''
+YOOKASSA_SECRET_KEY = ''
+
+# Правила отмены (см. films/pricing.py)
+BOOKING_CANCEL_FREE_HOURS = 2
+BOOKING_CANCEL_FEE_RATE = 0.50
 
 STATIC_URL = '/static/'
 

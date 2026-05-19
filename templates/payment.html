@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% load staticfiles %}
+{% block title %} Оплата бронирования #{{ booking.id }} {% endblock %}
+{% block content %}
+<div class="body">
+    <h3>Оплата бронирования #{{ booking.id }}</h3>
+    <p><strong>{{ room.name }}</strong> — {{ slot.date }}, {{ slot.time }}</p>
+    <p>Гостей: {{ booking.persons_count }}, длительность: {{ booking.duration_hours }} ч.</p>
+    {% if booking.package %}
+    <p>Пакет: {{ booking.package.name }}</p>
+    {% endif %}
+    <p class="p_price">К оплате: <strong>{{ payment.amount }}</strong> руб.</p>
+
+    {% if payment.status == 'paid' %}
+        <p>Бронирование уже оплачено.</p>
+        <a href="/cabinet/">В личный кабинет</a>
+    {% else %}
+        <form method="post" action="/payment/{{ booking.id }}/pay/">
+            {% csrf_token %}
+            <p>Тестовый режим: нажмите «Оплатить» для имитации успешного платежа.</p>
+            <button type="submit" class="buy">Оплатить {{ payment.amount }} руб.</button>
+        </form>
+        <p class="hint">В production подключается ЮKassa (см. README).</p>
+    {% endif %}
+</div>
+{% endblock %}

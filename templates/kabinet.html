@@ -26,146 +26,122 @@
 
     {% if not user.is_superuser %}
 	    <div class="body">
-		<p class="body_p"></p>
-        <h4>История бронирований:</h4> <br>
-
+		<h4>История бронирований</h4>
         <table>
             {% for item in items %}
             <tr>
                 <td>
                     <div class="text_bilet">
-                        <div class="td_date">{{ bilet.seans_id.date }}, {{ bilet.seans_id.time }}</div>
-                        <a href="/otziv/{{ bilet.seans_id.film.url_name }}/">{{ bilet.seans_id.film.name }}</a>
-                        , ряд: {{ bilet.row }}, место: {{ bilet.seat }}, цена: {{ bilet.price }} грн
-                        {% if not bilet.forname %}
-                            <br>код для печати: {{ bilet.pk }}
-                        {% else %}
-                            <br>Бронь снимается за 30 минут до начала сеанса!
+                        <div class="td_date">{{ item.timeslot_id.date }}, {{ item.timeslot_id.time }}</div>
+                        <a href="/room_review/{{ item.timeslot_id.room.url_name }}/">{{ item.timeslot_id.room.name }}</a>
+                        , гостей: {{ item.persons_count }}, цена: {{ item.price }} руб.
+                        {% if item.package %}
+                        <br>Пакет: {{ item.package.name }}
                         {% endif %}
-
+                        {% if not item.forname and item.payment_status %}
+                        <br>Статус оплаты: {{ item.get_payment_status_display }}
+                        {% endif %}
+                        {% if not item.forname %}
+                            <br>код для печати: {{ item.pk }}
+                        {% else %}
+                            <br>Резерв (оплатите до начала сеанса)
+                        {% endif %}
                     </div>
                 </td>
                 <td>
-                    {% if not bilet.forname %}
+                    {% if not item.forname %}
                     <div class="kupleno">
-                        КУПЛЕНО
+                        {% if item.payment_status == 'pending' %}
+                        <a href="/payment/{{ item.id }}/">ОПЛАТИТЬ</a>
+                        {% else %}
+                        ОПЛАЧЕНО
+                        {% endif %}
                     </div>
+                    {% if item.payment_status != 'cancelled' %}
+                    <a href="/booking/{{ item.id }}/cancel/">Отменить</a>
+                    {% endif %}
                     {% else %}
-                    <div class="bron">
-                        БРОНЬ
-                    </div>
+                    <div class="bron">РЕЗЕРВ</div>
                     {% endif %}
                 </td>
             </tr>
-            <tr>
-                <td>
-                    <br>
-                </td>
-            </tr>
+            <tr><td><br></td></tr>
+            {% empty %}
+            <tr><td>Бронирований пока нет.</td></tr>
             {% endfor %}
         </table>
-<br>
-<div class="pagination">
-    <div class="pagination pagination-centered">
-        <ul>
-            {% for page in bilets.paginator.page_range %}
-                {% if page == bilets.number %}
-                    <li class="current"><a href="/kabinet/page/{{ page }}/">{{ page }}</a></li>
+
+        {% if items.has_other_pages %}
+        <div class="pagination">
+            <ul>
+            {% for page in items.paginator.page_range %}
+                {% if page == items.number %}
+                    <li class="current"><a href="/cabinet/page/{{ page }}/">{{ page }}</a></li>
                 {% else %}
-                    <li><a href="/kabinet/page/{{ page }}/">{{ page }}</a></li>
+                    <li><a href="/cabinet/page/{{ page }}/">{{ page }}</a></li>
                 {% endif %}
             {% endfor %}
-        </ul>
-    </div>
-</div>
+            </ul>
+        </div>
+        {% endif %}
+        </div>
+
         {% else %}
         <table class="kabinet_table" align="center">
-        <caption class="kabinet_caption">Работа с отчетами кинотеатра</caption>
+        <caption class="kabinet_caption">Управление бронированиями караоке</caption>
             <tr><td colspan='3'><hr></td></tr>
-            <tr><td colspan='3'><div сlass="text_bilet">Работа с билетами кинотеатра</div></td></tr>
-            <tr><td colspan='3'><br></td></tr>
+            <tr><td colspan='3'>Печать квитанции по коду бронирования</td></tr>
             <tr>
-                <form action="/printbilet/" method="post">
+                <form action="/print_booking/" method="post">
                     {% csrf_token %}
-                    <td colspan="1" class="pad_td">
-                        <button type="submit">Распечатать билет</button>
-                    </td>
-                    <td colspan="1" class="pad_td">
-                        <input name="id_bilet" type="text" placeholder="Введите код билета..." required/>
-                    </td>
-                    <td colspan="1" class="pad_td">
-                        {% if admin == 'bilet_true' %}
-                            {{ user_name }} , {{ seans_name }}
-                        {% elif admin == 'bilet_false' %}
+                    <td class="pad_td"><button type="submit">Распечатать квитанцию</button></td>
+                    <td class="pad_td"><input name="id_booking" type="text" placeholder="Код бронирования..." required/></td>
+                    <td class="pad_td">
+                        {% if admin == 'booking_true' %}
+                            {{ user_name }}, {{ room_name }}
+                        {% elif admin == 'booking_false' %}
                             {{ error }}
                         {% endif %}
                     </td>
                 </form>
             </tr>
         <tr><td colspan='3'><hr></td></tr>
-        <tr><td colspan='3'><div сlass="text_bilet">Работа с отчетами по сеансам кинотеатра</div></td></tr>
-        <tr><td colspan='3'><br></td></tr>
+        <tr><td colspan='3'>Отчёты по слотам и датам</td></tr>
             <tr>
-                <form action="/printotchet/seans/" method="post">
+                <form action="/print_report/slot/" method="post">
                     {% csrf_token %}
+                    <td class="pad_td"><button type="submit">Отчёт по слоту</button></td>
+                    <td class="pad_td"><input name="id_slot" type="text" placeholder="ID слота..." required/></td>
                     <td class="pad_td">
-                        <button href="/printotchet/seans/">Распечатать отчет по сеансу</button>
-                    </td>
-
-                    <td class="pad_td">
-                        <input name="id_seans" type="text" placeholder="Введите код сеанса..." required/>
-                    </td>
-                    <td colspan="1" class="pad_td">
-                        {% if admin == 'seans_true' %}
-                            {{ seans_name }}, {{ seans_date }}, {{ seans_time }}
-                        {% elif admin == 'seans_false' %}
-                            {{ seans_false }}
+                        {% if admin == 'slot_true' %}
+                            {{ room_name }}, {{ slot_date }}, {{ slot_time }}
+                        {% elif admin == 'slot_false' %}
+                            {{ slot_false }}
                         {% endif %}
                     </td>
                 </form>
             </tr>
             <tr>
-                <form action="/printotchet/date/" method="post">
+                <form action="/print_report/date/" method="post">
                     {% csrf_token %}
-                    <td class="pad_td">
-                        <button href="/printotchet/date/">Распечатать отчет по нужной дате</button>
-                    </td>
-                    <td class="pad_td">
-                        <input name="date_seans" type="date" required/>
-                    </td>
-                    <td colspan="1" class="pad_td">
-                        {% if date_error %}
-                            {{ date_error }}
-                        {% endif %}
-                    </td>
+                    <td class="pad_td"><button type="submit">Отчёт по дате</button></td>
+                    <td class="pad_td"><input name="date_slot" type="date" required/></td>
+                    <td class="pad_td">{% if date_error %}{{ date_error }}{% endif %}</td>
                 </form>
             </tr>
             <tr>
-                <form action="/printotchet/interval/" method="post">
+                <form action="/print_report/interval/" method="post">
                     {% csrf_token %}
-                    <td class="pad_td">
-                        <button href="/printotchet/interval/">Распечатать отчет за интервал времени</button>
-                    </td>
-                    <td class="pad_td">
-                        <input name="date1_seans" type="date" required/>
-                    </td>
-                    <td class="pad_td">
-                        <input name="date2_seans" type="date" required/>
-                    </td>
+                    <td class="pad_td"><button type="submit">Отчёт за период</button></td>
+                    <td class="pad_td"><input name="date1_slot" type="date" required/></td>
+                    <td class="pad_td"><input name="date2_slot" type="date" required/></td>
                 </form>
             </tr>
             <tr>
-                <td class="pad_td">
-                    <a href="/printotchet/week/"><button>Распечатать отчет по сеансам на неделю</button></a>
-                </td>
-                <td class="pad_td">
-                    <a href="/printotchet/month/"><button>Распечатать отчет по сеансам на месяц</button></a>
-                </td>
-                <td class="pad_td">
-                    <a href="/printotchet/halfyear/"><button>Распечатать отчет по сеансам за полгода</button></a>
-                </td>
+                <td class="pad_td"><a href="/print_report/week/"><button>За неделю</button></a></td>
+                <td class="pad_td"><a href="/print_report/month/"><button>За месяц</button></a></td>
+                <td class="pad_td"><a href="/print_report/halfyear/"><button>За полгода</button></a></td>
             </tr>
-        <tr><td colspan='3'><br></td></tr>
         </table>
         {% endif %}
 

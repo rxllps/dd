@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load staticfiles %}
-{% block title %} Караоке-Бар | цены и скидки {% endblock %}
+{% block title %} Караоке-Бар | цены и пакеты {% endblock %}
 {% block template %}
 	<link rel="stylesheet" href="{% static 'price.css' %}">
 {% endblock %}
@@ -20,29 +20,49 @@
 				    <li class="sp2"><a href="/sign_in">Вход | Регистрация</a></li>
 				{% endif %}
 			</ul>
-		</div>
+			</ul>
 	</div>
 {% endblock %}
 {% block content %}
 	<div class="body">
-		<p class="body_p">
-		</p>
-		<h4>
-		Цены на бронирование в Караоке-Баре
-		</h4>
+		<h4>Цены и пакеты услуг</h4>
 		<p class="p_price">
 			Стандартные комнаты: от 500 до 1000 руб/час;<br>
 			VIP комнаты: от 2000 до 4000 руб/час.
 		</p>
-		<p class="p_price2">
-			Условия бронирования:
-		</p>
-			<p class="p_price">
-			Минимальное время бронирования: 1 час;<br>
-			Дисконт на групповое бронирование (от 5 часов): -15%.<br>
-			Льготы выходного дня: +20% к цене.
+
+		<h4>Пакеты услуг</h4>
+		{% if packages %}
+		<table class="packages-table">
+			<tr>
+				<th>Пакет</th>
+				<th>Длительность</th>
+				<th>Цена</th>
+				<th>Скидка</th>
+				<th>Включено</th>
+			</tr>
+			{% for pkg in packages %}
+			<tr>
+				<td>{{ pkg.name }}</td>
+				<td>{{ pkg.duration_hours }} ч.</td>
+				<td>{{ pkg.base_price }} руб.</td>
+				<td>{% if pkg.discount_percent %}{{ pkg.discount_percent }}%{% else %}—{% endif %}</td>
+				<td>{{ pkg.includes|default:pkg.description }}</td>
+			</tr>
+			{% endfor %}
+		</table>
+		{% else %}
+		<p>Пакеты пока не добавлены. Запустите: <code>python manage.py seed_packages</code></p>
+		{% endif %}
+
+		<p class="p_price2">Условия бронирования:</p>
+		<p class="p_price">
+			Минимальное время: 1 час;<br>
+			Групповая скидка (от 5 часов): −15%;<br>
+			Выходные: +20% к цене.
 		</p>
 		<p class="p_price3">
-			<b>Внимание:</b> Отмена бронирования за менее чем 2 часа до указанного времени — платная!
+			<b>Внимание:</b> отмена менее чем за 2 часа до начала — штраф 50% от суммы.
 		</p>
-	{% endblock %}
+	</div>
+{% endblock %}

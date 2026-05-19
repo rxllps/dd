@@ -10,7 +10,14 @@ from reportlab.pdfbase.ttfonts import TTFont
 
 from datetime import datetime, timedelta
 
-from films.models import Room, TimeSlot, Booking, Reservation, BookingStat
+from django.db import transaction
+
+from films.models import (
+    Room, TimeSlot, Booking, Reservation, BookingStat,
+    ServicePackage, Payment,
+)
+from films import pricing
+from films.payments import get_payment_provider
 from kinouser.models import Kinouser
 from guest_otziv.models import GuestOtziv, AdminOtziv
 from otziv.models import Otziv
@@ -173,6 +180,7 @@ def mykaraoke(request):
 def price(request):
     args = dict()
     args['user'] = request.user
+    args['packages'] = ServicePackage.objects.filter(is_active=True)
     return render_to_response('price.html', args)
 
 
@@ -183,31 +191,31 @@ def room_detail(request, name=''):
     room = TimeSlot.objects.filter(room__url_name=name)
 
     if room:
-        timeslots = TimeSlot.objects.filter(room__url_name=name,
-                                            date__gt=(datetime.today().date() - timedelta(days=1)))
+        timeslots = TimeSlot.objects.filter(
+            room__url_name=name,
+            date__gt=(datetime.today().date() - timedelta(days=1)),
+            status=TimeSlot.STATUS_FREE,
+            is_available=True,
+        )
         args['timeslots'] = timeslots
 
         a = 0
         for i in range(10):
             date = datetime.today().date() + timedelta(days=a)
             a += 1
-            if TimeSlot.objects.filter(room__url_name=name, date=date):
+            day_slots = TimeSlot.objects.filter(
+                room__url_name=name,
+                date=date,
+                status=TimeSlot.STATUS_FREE,
+                is_available=True,
+            )
+            if day_slots.exists():
                 timeslots_data[str(date)] = []
-                if (len(TimeSlot.objects.filter(room__url_name=name, date=date))) > 1:
-                    for i_ in range(len(TimeSlot.objects.filter(room__url_name=name, date=date))):
-                        if TimeSlot.objects.filter(room__url_name=name, date=date)[i_].date == datetime.today().date():
-                            timeslots_data[str(date)].append(
-                                'Время: ' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].time))
-                            timeslots_data[str(date)].append(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].price)
-                            timeslots_data[str(date)].append(
-                                'slot_id=' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[i_].id))
-                else:
-                    if TimeSlot.objects.filter(room__url_name=name, date=date)[0].date >= datetime.today().date():
-                        timeslots_data[str(date)].append(
-                            'Время: ' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[0].time))
-                        timeslots_data[str(date)].append(TimeSlot.objects.filter(room__url_name=name, date=date)[0].price)
-                        timeslots_data[str(date)].append(
-                            'slot_id=' + str(TimeSlot.objects.filter(room__url_name=name, date=date)[0].id))
+                for ts in day_slots:
+                    if ts.date >= datetime.today().date():
+                        timeslots_data[str(date)].append('Время: ' + str(ts.time))
+                        timeslots_data[str(date)].append(ts.price)
+                        timeslots_data[str(date)].append('slot_id=' + str(ts.id))
 
         args['room'] = Room.objects.filter(url_name=name)[0]
         args['timeslots_data'] = timeslots_data
@@ -217,51 +225,248 @@ def room_detail(request, name=''):
     return redirect('/')
 
 
+def _get_package(package_id):
+    if not package_id:
+        return None
+    try:
+        return ServicePackage.objects.get(id=package_id, is_active=True)
+    except ServicePackage.DoesNotExist:
+        return None
+
+
+def _parse_booking_form(request, slot):
+    persons = int(request.POST.get('persons', '1') or 1)
+    duration_hours = int(request.POST.get('duration_hours', '1') or 1)
+    package = _get_package(request.POST.get('package_id', ''))
+    special_requests = request.POST.get('special_requests', '')
+
+    if persons > slot.room.max_persons:
+        return None, 'Превышена вместимость комнаты (%s чел.)' % slot.room.max_persons
+
+    if package and not package.applies_to_room(slot.room):
+        return None, 'Пакет не подходит для выбранной комнаты'
+
+    amount = pricing.calculate_booking_price(
+        slot.room, slot, package=package, duration_hours=duration_hours
+    )
+    return {
+        'persons': persons,
+        'duration_hours': duration_hours,
+        'package': package,
+        'special_requests': special_requests,
+        'amount': amount,
+    }, None
+
+
+@csrf_exempt
+def booking_quote(request):
+    if request.method != 'POST':
+        return HttpResponse('method not allowed', status=405)
+    try:
+        slot = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
+    except TimeSlot.DoesNotExist:
+        return HttpResponse('slot not found', status=404)
+    data, error = _parse_booking_form(request, slot)
+    if error:
+        return HttpResponse(error, status=400)
+    return HttpResponse(str(data['amount']), content_type='text/plain')
+
+
 @csrf_exempt
 def booking(request, slot_id):
     args = dict()
     if request.method == 'POST':
+        if not request.user.is_authenticated():
+            return HttpResponse('auth required', status=403)
+
         user = request.user
-        if request.POST.get('action', ) == 'book':
-            slot_id = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
-            persons = request.POST.get('persons', '1')
-            
-            booking_obj = Booking(
-                timeslot_id=slot_id,
-                persons_count=int(persons),
-                price=int(persons) * slot_id.price
-            )
-            booking_obj.save()
-            user.bookings.add(booking_obj)
+        try:
+            slot = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
+        except TimeSlot.DoesNotExist:
+            return HttpResponse('slot not found', status=404)
 
+        if not slot.is_bookable():
+            return HttpResponse('slot unavailable', status=409)
+
+        data, error = _parse_booking_form(request, slot)
+        if error:
+            return HttpResponse(error, status=400)
+
+        action = request.POST.get('action', '')
+
+        if action == 'reserve':
+            with transaction.atomic():
+                slot = TimeSlot.objects.select_for_update().get(pk=slot.pk)
+                if not slot.is_bookable():
+                    return HttpResponse('slot unavailable', status=409)
+                name_user = user.firstname + " " + user.lastname
+                reservation = Reservation(
+                    timeslot_id=slot,
+                    forname=name_user,
+                    persons_count=data['persons'],
+                    price=data['amount'],
+                    package=data['package'],
+                    duration_hours=data['duration_hours'],
+                    special_requests=data['special_requests'],
+                )
+                reservation.save()
+                slot.reserve()
+                user.reservations.add(reservation)
             return HttpResponse('ok', content_type='text/html')
 
-        elif request.POST.get('action', ) == 'reserve':
-            slot_id = TimeSlot.objects.get(id=request.POST.get('slot_id', ''))
-            persons = request.POST.get('persons', '1')
-            name_user = request.user.firstname + " " + request.user.lastname
+        elif action == 'book':
+            with transaction.atomic():
+                slot = TimeSlot.objects.select_for_update().get(pk=slot.pk)
+                if not slot.is_bookable():
+                    return HttpResponse('slot unavailable', status=409)
+                booking_obj = Booking(
+                    timeslot_id=slot,
+                    persons_count=data['persons'],
+                    price=data['amount'],
+                    package=data['package'],
+                    duration_hours=data['duration_hours'],
+                    special_requests=data['special_requests'],
+                    payment_status=Booking.PAYMENT_PENDING,
+                )
+                booking_obj.save()
+                slot.reserve()
+                user.bookings.add(booking_obj)
+                payment = Payment.objects.create(
+                    booking=booking_obj,
+                    amount=data['amount'],
+                    provider=settings.PAYMENT_PROVIDER,
+                )
+                get_payment_provider().create_payment(payment)
 
-            reservation = Reservation(
-                timeslot_id=slot_id,
-                forname=name_user,
-                persons_count=int(persons),
-                price=int(persons) * slot_id.price
-            )
-            reservation.save()
-            user.reservations.add(reservation)
+            return HttpResponse('/payment/%s/' % booking_obj.id, content_type='text/plain')
 
-            return HttpResponse('ok', content_type='text/html')
+        return HttpResponse('unknown action', status=400)
+
     else:
-        slot = TimeSlot.objects.filter(id=slot_id)
+        try:
+            slot = TimeSlot.objects.get(id=slot_id)
+        except TimeSlot.DoesNotExist:
+            return redirect('/')
+
+        if not slot.is_bookable():
+            return HttpResponse('Слот недоступен для бронирования', status=409)
+
+        packages = ServicePackage.objects.filter(is_active=True)
+        applicable = [p for p in packages if p.applies_to_room(slot.room)]
+
         args['user'] = request.user
-        args['slot'] = slot[0]
-        
-        price = slot[0].price
-        args['price'] = price
+        args['slot'] = slot
+        args['room'] = slot.room
+        args['packages'] = applicable
+        args['price'] = pricing.calculate_booking_price(slot.room, slot)
+        args['max_persons'] = slot.room.max_persons
         if request.user.is_authenticated():
             args['user_name'] = request.user.firstname + " " + request.user.lastname
 
         return render(request, 'buy_window.html', args)
+
+
+def payment_page(request, booking_id):
+    if not request.user.is_authenticated():
+        return redirect('/sign_in/')
+    try:
+        booking_obj = Booking.objects.get(id=booking_id)
+    except Booking.DoesNotExist:
+        return redirect('/cabinet/')
+
+    if booking_obj not in request.user.bookings.all():
+        return redirect('/cabinet/')
+
+    payment = getattr(booking_obj, 'payment', None)
+    args = {
+        'user': request.user,
+        'booking': booking_obj,
+        'payment': payment,
+        'slot': booking_obj.timeslot_id,
+        'room': booking_obj.timeslot_id.room,
+    }
+    return render(request, 'payment.html', args)
+
+
+@csrf_exempt
+def payment_confirm(request, booking_id):
+    if request.method != 'POST':
+        return redirect('/payment/%s/' % booking_id)
+
+    if not request.user.is_authenticated():
+        return redirect('/sign_in/')
+
+    try:
+        booking_obj = Booking.objects.get(id=booking_id)
+        payment = booking_obj.payment
+    except (Booking.DoesNotExist, Payment.DoesNotExist):
+        return redirect('/cabinet/')
+
+    if booking_obj not in request.user.bookings.all():
+        return redirect('/cabinet/')
+
+    if payment.status == Payment.STATUS_PAID:
+        return redirect('/payment/%s/success/' % booking_id)
+
+    provider = get_payment_provider()
+    provider.confirm_payment(payment, external_id=request.POST.get('external_id', ''))
+    return redirect('/payment/%s/success/' % booking_id)
+
+
+def payment_success(request, booking_id):
+    if not request.user.is_authenticated():
+        return redirect('/sign_in/')
+    try:
+        booking_obj = Booking.objects.get(id=booking_id)
+    except Booking.DoesNotExist:
+        return redirect('/cabinet/')
+    return render(request, 'payment_result.html', {
+        'user': request.user,
+        'booking': booking_obj,
+        'payment': getattr(booking_obj, 'payment', None),
+    })
+
+
+@csrf_exempt
+def payment_webhook(request):
+    """Webhook для внешнего платёжного провайдера (заглушка)."""
+    external_id = request.POST.get('external_id', '')
+    booking_id = request.POST.get('booking_id', '')
+    if not booking_id:
+        return HttpResponse('bad request', status=400)
+    try:
+        payment = Payment.objects.get(booking_id=booking_id)
+    except Payment.DoesNotExist:
+        return HttpResponse('not found', status=404)
+    get_payment_provider().confirm_payment(payment, external_id=external_id)
+    return HttpResponse('ok')
+
+
+def cancel_booking(request, booking_id):
+    if not request.user.is_authenticated():
+        return redirect('/sign_in/')
+    try:
+        booking_obj = Booking.objects.get(id=booking_id)
+    except Booking.DoesNotExist:
+        return redirect('/cabinet/')
+
+    if booking_obj not in request.user.bookings.all() and not request.user.is_superuser:
+        return redirect('/cabinet/')
+
+    fee = pricing.cancellation_fee(booking_obj.price, booking_obj.timeslot_id)
+    if request.method == 'POST':
+        booking_obj.mark_cancelled(fee=fee)
+        if hasattr(booking_obj, 'payment') and booking_obj.payment.status == Payment.STATUS_PAID:
+            booking_obj.payment.status = Payment.STATUS_REFUNDED
+            booking_obj.payment.save()
+        return redirect('/cabinet/')
+
+    return render(request, 'cancel_booking.html', {
+        'user': request.user,
+        'booking': booking_obj,
+        'fee': fee,
+        'free_hours': pricing.CANCEL_FREE_HOURS,
+    })
 
 
 def upcoming_rooms(request, page_number=1):
@@ -324,7 +529,10 @@ def create_booking_receipt(booking):
     c.drawString(130, 120, str(booking.timeslot_id.date))
     c.drawString(350, 120, booking.timeslot_id.time)
     c.setFont("font", 25)
-    c.drawString(30, 50, 'Цена: ' + str(booking.price))
+    c.drawString(30, 50, 'Цена: ' + str(booking.price) + ' руб.')
+    if booking.package:
+        c.setFont("font", 16)
+        c.drawString(30, 25, 'Пакет: ' + booking.package.name)
     c.setFont("font", 20)
     c.drawString(520, 230, str(booking.id))
 

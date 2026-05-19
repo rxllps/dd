@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %} Отмена бронирования {% endblock %}
+{% block content %}
+<div class="body">
+    <h3>Отмена бронирования #{{ booking.id }}</h3>
+    <p>{{ booking.timeslot_id.room.name }} — {{ booking.timeslot_id.date }}, {{ booking.timeslot_id.time }}</p>
+    {% if fee > 0 %}
+    <p class="p_price3">Менее {{ free_hours }} ч. до начала — штраф за отмену: <strong>{{ fee }}</strong> руб.</p>
+    {% else %}
+    <p>Отмена бесплатна (более {{ free_hours }} ч. до начала).</p>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit">Подтвердить отмену</button>
+        <a href="/cabinet/">Назад</a>
+    </form>
+</div>
+{% endblock %}
