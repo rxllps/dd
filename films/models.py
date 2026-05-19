@@ -95,7 +95,7 @@ class TimeSlot(models.Model):
 
     date = models.DateField()
     time = models.CharField(max_length=30)
-    room = models.ForeignKey(Room)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
     price = models.IntegerField()
     duration_minutes = models.PositiveSmallIntegerField(default=60)
     status = models.CharField(
@@ -152,12 +152,14 @@ class TimeSlot(models.Model):
 
 
 class Reservation(models.Model):
-    timeslot_id = models.ForeignKey(TimeSlot)
+    timeslot_id = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     forname = models.CharField(max_length=20)
     persons_count = models.IntegerField(default=0)
     special_requests = models.TextField(blank=True)
     price = models.IntegerField(default=0)
-    package = models.ForeignKey(ServicePackage, null=True, blank=True)
+    package = models.ForeignKey(
+        ServicePackage, null=True, blank=True, on_delete=models.SET_NULL
+    )
     duration_hours = models.PositiveSmallIntegerField(default=1)
     created_at = models.DateTimeField(auto_now_add=True, null=True)
 
@@ -192,11 +194,13 @@ class Booking(models.Model):
         (PAYMENT_CANCELLED, 'Отменено'),
     )
 
-    timeslot_id = models.ForeignKey(TimeSlot)
+    timeslot_id = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     persons_count = models.IntegerField(default=0)
     price = models.IntegerField(default=0)
     booking_date = models.DateTimeField(auto_now_add=True)
-    package = models.ForeignKey(ServicePackage, null=True, blank=True)
+    package = models.ForeignKey(
+        ServicePackage, null=True, blank=True, on_delete=models.SET_NULL
+    )
     duration_hours = models.PositiveSmallIntegerField(default=1)
     payment_status = models.CharField(
         max_length=20,
@@ -260,7 +264,7 @@ class Payment(models.Model):
     PROVIDER_MOCK = 'mock'
     PROVIDER_YOOKASSA = 'yookassa'
 
-    booking = models.OneToOneField(Booking, related_name='payment')
+    booking = models.OneToOneField(Booking, related_name='payment', on_delete=models.CASCADE)
     amount = models.IntegerField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default=STATUS_PENDING)
     provider = models.CharField(max_length=30, default=PROVIDER_MOCK)
@@ -274,7 +278,7 @@ class Payment(models.Model):
 
 
 class BookingStat(models.Model):
-    timeslot_id = models.ForeignKey(TimeSlot)
+    timeslot_id = models.ForeignKey(TimeSlot, on_delete=models.CASCADE)
     total_bookings = models.IntegerField(default=0)
     total_sum = models.IntegerField(default=0)
 

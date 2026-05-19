@@ -8,7 +8,7 @@ class Otziv(models.Model):
     text = models.TextField(max_length=20000)
     email = models.EmailField()
     date = models.DateField()
-    room = models.ForeignKey(Room)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
 
     def __str__(self):
         return self.room.name

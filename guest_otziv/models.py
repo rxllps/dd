@@ -13,4 +13,4 @@ class GuestOtziv(models.Model):
 
 class AdminOtziv(models.Model):
     text = models.TextField(max_length=20000)
-    guestOtziv=models.ForeignKey(GuestOtziv)
+    guestOtziv = models.ForeignKey(GuestOtziv, on_delete=models.CASCADE)
